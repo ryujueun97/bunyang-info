@@ -1,0 +1,248 @@
+'use client'
+
+import { GeoJSON, useMap } from 'react-leaflet'
+import type { FeatureCollection } from 'geojson'
+import L from 'leaflet'
+import { useEffect, useMemo, useRef, useState } from 'react'
+
+export type SelectedRegion = {
+  code: string | null
+  name: string
+}
+
+type Props = {
+  geo: FeatureCollection
+  selectedCode: string | null
+  onSelect: (v: SelectedRegion) => void
+  autoFitOnSelect?: boolean
+}
+
+function normalizeKoreanSpacing(s: string): string {
+  return s
+    .trim()
+    .replace(/([가-힣])\s+([가-힣])/g, '$1$2')
+    .replace(/([가-힣])\s+([가-힣])/g, '$1$2')
+}
+
+function stripTrailingCode(s: string): string {
+  // "포천시 ARB020000000000MGG" 같은 형태 제거
+  // 공백/구분자 뒤에 대문자+숫자 조합이 길게 붙으면 뒷부분을 제거
+  return s.replace(/\s*[·|/:-]?\s*[A-Z]{2,}\d{2,}[A-Z0-9]*\s*$/g, '').trim()
+}
+
+function toStr(v: any): string | null {
+  if (typeof v === 'string') {
+    const t = v.trim()
+    return t ? t : null
+  }
+  if (typeof v === 'number' && Number.isFinite(v)) return String(v)
+  return null
+}
+
+function pickCode(p: Record<string, any>): string | null {
+  const candidates = [
+    // 시군구에서 흔한 코드 키
+    'SIG_CD',
+    'sig_cd',
+    'SGG_CD',
+    'sgg_cd',
+    'ADM_CD',
+    'adm_cd',
+    'CODE',
+    'code',
+
+    // 너가 쓰던 후보
+    'A1',
+    'NF_ID',
+  ]
+
+  for (const k of candidates) {
+    const v = toStr(p?.[k])
+    if (v) return v
+  }
+
+  // fallback: 키 이름에 cd/code 들어간 것 중 값이 있으면 채택
+  for (const [k, v0] of Object.entries(p || {})) {
+    const kk = k.toLowerCase()
+    if (kk.includes('cd') || kk.includes('code')) {
+      const v = toStr(v0)
+      if (v) return v
+    }
+  }
+
+  return null
+}
+
+function pickName(p: Record<string, any>): string {
+  const candidates = [
+    // 변환 데이터에서 가장 자주 나오는 이름 키들
+    'SIG_KOR_NM',
+    'sig_kor_nm',
+    'SIG_NM',
+    'sig_nm',
+    'SGG_NM',
+    'sgg_nm',
+    'ADM_NM',
+    'adm_nm',
+    'NAME',
+    'name',
+    'KOR_NM',
+    'kor_nm',
+
+    // 너가 쓰던 후보
+    'A2',
+  ]
+
+  for (const k of candidates) {
+    const v = toStr(p?.[k])
+    if (v) return normalizeKoreanSpacing(v)
+  }
+
+  // fallback: 한글 포함 문자열 아무거나 (너무 짧은 값은 피함)
+  const strings = Object.entries(p || {})
+    .filter(([, v]) => typeof v === 'string' && (v as string).trim())
+    .map(([k, v]) => ({ k, v: (v as string).trim() }))
+
+  const korean = strings.filter((e) => /[가-힣]/.test(e.v))
+  if (korean.length) {
+    const filtered = korean.filter((e) => e.v.length >= 3)
+    const pick = (filtered.length ? filtered : korean)[0]
+    return normalizeKoreanSpacing(pick.v)
+  }
+
+  return '(unknown)'
+}
+
+export default function KoreaGeoLayer({
+  geo,
+  selectedCode,
+  onSelect,
+  autoFitOnSelect = true,
+}: Props) {
+  const map = useMap()
+
+  // ✅ pane 준비 완료되기 전엔 GeoJSON 렌더 금지 (appendChild 에러 방지)
+  const [paneReady, setPaneReady] = useState(false)
+
+  // 디버그: 처음 N개만 properties 키/샘플/추출값 출력
+  const debugCountRef = useRef(0)
+
+  useEffect(() => {
+    const paneName = 'geojsonPane'
+    let pane = map.getPane(paneName)
+    if (!pane) {
+      pane = map.createPane(paneName)
+      pane.style.zIndex = '650'
+      pane.style.pointerEvents = 'auto'
+    }
+    setPaneReady(true)
+  }, [map])
+
+  const baseStyle: L.PathOptions = useMemo(
+    () => ({
+      weight: 1.5,
+      color: 'rgba(0,0,0,0.45)',
+      fillColor: 'rgba(50,140,255,0.14)',
+      fillOpacity: 0.28, // 클릭 테스트용으로 조금 더 올림
+    }),
+    []
+  )
+
+  const hoverStyle: L.PathOptions = useMemo(
+    () => ({
+      weight: 2.5,
+      color: 'rgba(0,0,0,0.70)',
+      fillColor: 'rgba(50,140,255,0.28)',
+      fillOpacity: 0.48,
+    }),
+    []
+  )
+
+  const selectedStyle: L.PathOptions = useMemo(
+    () => ({
+      weight: 3,
+      color: 'rgba(0,0,0,0.85)',
+      fillColor: 'rgba(50,140,255,0.40)',
+      fillOpacity: 0.62,
+    }),
+    []
+  )
+
+  const onEachFeature = (feature: any, layer: L.Layer) => {
+    const p = feature?.properties || {}
+    const code = pickCode(p)
+    const name = pickName(p)
+
+    if (debugCountRef.current < 3) {
+      debugCountRef.current += 1
+      console.log('[FEATURE DEBUG]', {
+        keys: Object.keys(p),
+        sample: p,
+        picked: { code, name },
+        geomType: feature?.geometry?.type,
+      })
+    }
+
+    ;(layer as any).setStyle?.(baseStyle)
+
+    // ✅ 툴팁이 클릭 가로채는 경우 방지: interactive:false
+    try {
+      ;(layer as any).bindTooltip?.(
+        `${name}${code ? ` (${code})` : ''}\nkeys: ${Object.keys(p || {}).slice(0, 8).join(', ')}`,
+        { sticky: true, direction: 'top', interactive: false }
+      )
+    } catch {}
+
+    if (selectedCode && code && selectedCode === code) {
+      ;(layer as any).setStyle?.(selectedStyle)
+      ;(layer as any).bringToFront?.()
+    }
+
+    layer.on('mouseover', () => {
+      if (selectedCode && code && selectedCode === code) return
+      ;(layer as any).setStyle?.(hoverStyle)
+      ;(layer as any).bringToFront?.()
+    })
+
+    layer.on('mouseout', () => {
+      if (selectedCode && code && selectedCode === code) {
+        ;(layer as any).setStyle?.(selectedStyle)
+      } else {
+        ;(layer as any).setStyle?.(baseStyle)
+      }
+    })
+
+    layer.on('click', (e: any) => {
+      console.log('[POLYGON CLICK]', { code, name })
+
+      // 지도 클릭으로 전파 차단 (원래 DOM 이벤트를 막는 게 제일 확실)
+      try {
+        if (e?.originalEvent) L.DomEvent.stopPropagation(e.originalEvent)
+      } catch {}
+
+      onSelect({ code, name })
+
+      if (autoFitOnSelect) {
+        try {
+          const b = (layer as any).getBounds?.()
+          if (b) map.fitBounds(b, { padding: [24, 24], maxZoom: 11, animate: true })
+        } catch (err) {
+          console.warn('[fitBounds] failed:', err)
+        }
+      }
+    })
+  }
+
+  // ✅ pane 준비 전이면 렌더하지 않음 (에러 방지)
+  if (!paneReady) return null
+
+  return (
+    <GeoJSON
+      pane="geojsonPane"
+      interactive={true}
+      data={geo as any}
+      style={baseStyle as any}
+      onEachFeature={onEachFeature as any}
+    />
+  )
+}

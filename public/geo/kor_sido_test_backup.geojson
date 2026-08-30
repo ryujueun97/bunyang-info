@@ -1,0 +1,29 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "name": "서울" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[126.76,37.43],[127.18,37.43],[127.18,37.70],[126.76,37.70],[126.76,37.43]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "경기" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[126.0,36.9],[127.9,36.9],[127.9,38.3],[126.0,38.3],[126.0,36.9]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "인천" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[126.3,37.2],[126.8,37.2],[126.8,37.7],[126.3,37.7],[126.3,37.2]]]
+      }
+    }
+  ]
+}
