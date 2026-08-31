@@ -281,6 +281,8 @@ export default function BunyangPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans">
+      
+      {/* 1. TOP HEADER */}
       <header className="sticky top-0 z-30 bg-white border-b border-slate-200 shadow-sm px-4 lg:px-8 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <button 
@@ -294,7 +296,7 @@ export default function BunyangPage() {
           <div className="flex items-center gap-2">
             <Building className="w-6 h-6 text-red-600" />
             <span className="font-extrabold text-xl tracking-tight text-slate-900">
-              새날<span className="text-red-600">분양HUB</span>
+              분양<span className="text-red-600">HUB</span>
             </span>
           </div>
         </div>
@@ -316,6 +318,7 @@ export default function BunyangPage() {
         </div>
       </header>
 
+      {/* 2. LEFT SIDEBAR DRAWER (회사소개만 유지) */}
       {isDrawerOpen && (
         <div className="fixed inset-0 z-50 flex">
           <div 
@@ -326,7 +329,7 @@ export default function BunyangPage() {
             <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-900 text-white">
               <div className="flex items-center gap-2">
                 <Building className="w-5 h-5 text-red-500" />
-                <span className="font-bold text-lg">새날그룹 메뉴</span>
+                <span className="font-bold text-lg">전체 메뉴</span>
               </div>
               <button 
                 onClick={() => setIsDrawerOpen(false)}
@@ -359,41 +362,21 @@ export default function BunyangPage() {
                       <ShieldCheck className="w-3.5 h-3.5 text-red-500" /> 조직도 및 시스템
                     </a>
                     <a href="#about" onClick={() => setIsDrawerOpen(false)} className="flex items-center gap-2 py-2 px-3 rounded-lg hover:bg-red-50 hover:text-red-600 font-semibold transition">
-                      <Building className="w-3.5 h-3.5 text-red-500" /> 새날그룹 소개
+                      <Building className="w-3.5 h-3.5 text-red-500" /> 회사 소개
                     </a>
                   </div>
                 )}
               </div>
-
-              {[
-                { name: '사업영역', href: '#business' },
-                { name: '분양정보', href: '#bunyang' },
-                { name: '정보센터', href: '#info' },
-                { name: '고객센터', href: '#cs' },
-                { name: '관심고객등록', href: '#register', highlight: true },
-              ].map((item, idx) => (
-                <a
-                  key={idx}
-                  href={item.href}
-                  className={`block px-5 py-3.5 border-b border-slate-100 font-semibold transition ${
-                    item.highlight 
-                      ? 'bg-red-50 text-red-600 hover:bg-red-100' 
-                      : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
-                  }`}
-                  onClick={() => setIsDrawerOpen(false)}
-                >
-                  {item.name}
-                </a>
-              ))}
             </div>
 
             <div className="p-4 bg-slate-50 border-t border-slate-200 text-xs text-slate-500 text-center">
-              Copyright © 2026 SAENAL INC. All Rights Reserved.
+              Copyright © 2026 BUNYANG HUB. All Rights Reserved.
             </div>
           </div>
         </div>
       )}
 
+      {/* 3. SEARCH FILTER MODAL */}
       {isSearchOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div 
@@ -498,6 +481,7 @@ export default function BunyangPage() {
         </div>
       )}
 
+      {/* 4. DETAIL POPUP MODAL */}
       {selectedProperty && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div 
@@ -569,6 +553,7 @@ export default function BunyangPage() {
         </div>
       )}
 
+      {/* 5. MAIN MAP & LIST VIEW */}
       <main className="flex-1 flex flex-col lg:flex-row max-w-7xl w-full mx-auto p-4 gap-6">
         <section className="flex-1 bg-gradient-to-b from-slate-100 to-slate-200 border border-slate-300 rounded-2xl p-4 shadow-inner relative min-h-[500px] lg:min-h-[640px] flex flex-col">
           <div className="flex items-center justify-between mb-2 z-10 bg-white/90 backdrop-blur-md p-3 rounded-xl border border-slate-200 shadow-sm">
