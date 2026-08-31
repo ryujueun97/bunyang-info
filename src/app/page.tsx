@@ -24,7 +24,6 @@ interface Property {
   isRepresentative?: boolean;
 }
 
-// 전국 도/광역시별 '분양중' 대표 1건 데이터
 const PROPERTIES: Property[] = [
   {
     id: '1',
@@ -282,8 +281,6 @@ export default function BunyangPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans">
-      
-      {/* 1. TOP HEADER */}
       <header className="sticky top-0 z-30 bg-white border-b border-slate-200 shadow-sm px-4 lg:px-8 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <button 
@@ -319,7 +316,6 @@ export default function BunyangPage() {
         </div>
       </header>
 
-      {/* 2. LEFT SIDEBAR DRAWER (회사소개 탭 포함) */}
       {isDrawerOpen && (
         <div className="fixed inset-0 z-50 flex">
           <div 
@@ -341,7 +337,6 @@ export default function BunyangPage() {
             </div>
 
             <div className="flex-1 overflow-y-auto py-2">
-              {/* 회사소개 서브메뉴 */}
               <div className="border-b border-slate-100 bg-red-50/40">
                 <button 
                   onClick={() => setActiveSubMenu(activeSubMenu === 'company' ? null : 'company')}
@@ -370,7 +365,6 @@ export default function BunyangPage() {
                 )}
               </div>
 
-              {/* 메인 메뉴들 */}
               {[
                 { name: '사업영역', href: '#business' },
                 { name: '분양정보', href: '#bunyang' },
@@ -400,7 +394,6 @@ export default function BunyangPage() {
         </div>
       )}
 
-      {/* 3. SEARCH FILTER MODAL */}
       {isSearchOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div 
@@ -505,7 +498,6 @@ export default function BunyangPage() {
         </div>
       )}
 
-      {/* 4. DETAIL POPUP MODAL */}
       {selectedProperty && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div 
@@ -577,12 +569,8 @@ export default function BunyangPage() {
         </div>
       )}
 
-      {/* 5. MAIN MAP & LIST VIEW */}
       <main className="flex-1 flex flex-col lg:flex-row max-w-7xl w-full mx-auto p-4 gap-6">
-        
-        {/* MAP SECTION */}
         <section className="flex-1 bg-gradient-to-b from-slate-100 to-slate-200 border border-slate-300 rounded-2xl p-4 shadow-inner relative min-h-[500px] lg:min-h-[640px] flex flex-col">
-          
           <div className="flex items-center justify-between mb-2 z-10 bg-white/90 backdrop-blur-md p-3 rounded-xl border border-slate-200 shadow-sm">
             <div>
               <h2 className="font-extrabold text-slate-800 text-base sm:text-lg flex items-center gap-2">
@@ -613,9 +601,7 @@ export default function BunyangPage() {
             </div>
           </div>
 
-          {/* MAP CANVAS */}
           <div className="relative flex-1 w-full h-full flex items-center justify-center overflow-hidden rounded-xl bg-slate-50/50">
-            
             <svg 
               viewBox="0 0 500 700" 
               className="w-full h-full max-h-[600px] drop-shadow-md select-none"
@@ -669,7 +655,6 @@ export default function BunyangPage() {
               </g>
             </svg>
 
-            {/* MY LOCATION PIN */}
             {myLocation && (
               <div 
                 style={{ top: `${myLocation.lat}%`, left: `${myLocation.lng}%` }}
@@ -686,7 +671,6 @@ export default function BunyangPage() {
               </div>
             )}
 
-            {/* REPRESENTATIVE PROPERTY IMAGE CARDS */}
             {filteredProperties.map((p) => (
               <div 
                 key={p.id}
@@ -731,7 +715,6 @@ export default function BunyangPage() {
           </div>
         </section>
 
-        {/* RIGHT LIST SECTION */}
         <section className="w-full lg:w-96 flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <h2 className="font-bold text-slate-900 text-lg flex items-center gap-2">
@@ -814,21 +797,7 @@ export default function BunyangPage() {
             )}
           </div>
         </section>
-
       </main>
-
     </div>
   );
 }
-```eof
-
-### 📌 파일 저장 및 푸시하는 정확한 위치 안내
-
-1. VS Code의 왼쪽 파일 탐색기에서 **`src` ➔ `app` ➔ `page.tsx`** 파일 경로를 클릭합니다.
-2. 위 코드 전체를 복사해서 **`src/app/page.tsx`** 에 붙여넣고 저장(`Cmd + S`)합니다.
-3. VS Code 터미널에서 아래 명령어를 순서대로 실행합니다:
-
-```bash
-git add .
-git commit -m "fix: update src/app/page.tsx main page"
-git push origin main
