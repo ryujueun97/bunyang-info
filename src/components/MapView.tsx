@@ -3,12 +3,20 @@
 
 import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import { Search, Plus, Minus, MapPin, X, PhoneCall } from 'lucide-react';
+import { Search, MapPin, X, PhoneCall } from 'lucide-react';
 
 import 'leaflet/dist/leaflet.css';
 
 const MapContainer = dynamic(
   () => import('react-leaflet').then((mod) => mod.MapContainer),
+  { ssr: false }
+);
+const TileLayer = dynamic(
+  () => import('react-leaflet').then((mod) => mod.TileLayer),
+  { ssr: false }
+);
+const Marker = dynamic(
+  () => import('react-leaflet').then((mod) => mod.Marker),
   { ssr: false }
 );
 const KoreaGeoLayer = dynamic(() => import('./KoreaGeoLayer'), { ssr: false });
@@ -142,9 +150,19 @@ export default function MapView() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
+  const [customIcon, setCustomIcon] = useState<any>(null);
 
   useEffect(() => {
     setIsMounted(true);
+    import('leaflet').then((L) => {
+      const icon = L.divIcon({
+        className: 'custom-leaflet-marker',
+        html: `<div class="w-3 h-3 bg-red-600 rounded-full border-2 border-white shadow-md animate-pulse"></div>`,
+        iconSize: [12, 12],
+        iconAnchor: [6, 6]
+      });
+      setCustomIcon(icon);
+    });
   }, []);
 
   const filteredProperties = REPRESENTATIVE_PROPERTIES.filter(
@@ -160,7 +178,7 @@ export default function MapView() {
   return (
     <div className="relative w-full h-[calc(100vh-53px)] bg-slate-100 flex items-center justify-center overflow-hidden [&_.leaflet-control-attribution]:hidden">
       
-      {/* 1. 상단 시·군·구 검색 바 */}
+      {/* 1. 검색 바 */}
       <div className="absolute top-4 z-[800] w-11/12 max-w-md">
         <div className="relative flex items-center bg-white rounded-xl shadow-md border border-slate-200">
           <Search className="w-5 h-5 text-slate-400 ml-3.5 flex-shrink-0" />
@@ -174,55 +192,38 @@ export default function MapView() {
         </div>
       </div>
 
-      {/* 2. 지도 및 마커 결합 영역 */}
+      {/* 2. Leaflet 타일 지도 & KoreaGeoLayer 조합 */}
       <div className="w-full h-full">
         <MapContainer
           center={[36.0, 127.8]}
           zoom={7}
-          zoomControl={false}
+          zoomControl={true}
           attributionControl={false}
           className="w-full h-full bg-slate-100"
         >
-          {/* KoreaGeoLayer 정상 전달 */}
+          {/* Leaflet 백그라운드 지도 타일 */}
+          <TileLayer
+            url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+          />
+
+          {/* 대한민국 GeoJSON 레이어 */}
           <KoreaGeoLayer
             geo={{ type: 'FeatureCollection', features: [] }}
             selectedCode={selectedCode}
             onSelect={(region) => setSelectedCode(region?.code || null)}
           />
 
-          {/* 마커 카드 (MapContainer 내 위치 고정) */}
-          <div className="leaflet-pane leaflet-popup-pane">
-            {filteredProperties.map((prop) => (
-              <div
-                key={prop.id}
-                onClick={() => setSelectedProperty(prop)}
-                className="absolute cursor-pointer transform -translate-x-1/2 -translate-y-1/2 z-[700] group"
-                style={{
-                  left: `${((prop.lng - 126.0) / 4.0) * 100}%`,
-                  top: `${((38.5 - prop.lat) / 5.0) * 100}%`
-                }}
-              >
-                <div className="w-[105px] bg-white/95 backdrop-blur-sm border border-slate-300 rounded-lg shadow-md overflow-hidden transition transform group-hover:scale-105 group-hover:border-red-500">
-                  <div className="relative h-11 w-full bg-slate-200">
-                    <img 
-                      src={prop.image} 
-                      alt={prop.title} 
-                      className="w-full h-full object-cover" 
-                    />
-                    <span className="absolute top-1 left-1 bg-cyan-500 text-white font-bold text-[8px] px-1 py-0.2 rounded shadow-sm">
-                      {prop.status}
-                    </span>
-                  </div>
-                  <div className="p-1 text-center bg-white">
-                    <span className="block font-extrabold text-[10px] text-slate-800 truncate leading-tight">
-                      {prop.title}
-                    </span>
-                  </div>
-                </div>
-                <div className="w-2.5 h-2.5 bg-red-600 rounded-full border-2 border-white shadow mx-auto -mt-0.5 animate-pulse" />
-              </div>
-            ))}
-          </div>
+          {/* 각 분양 단지 좌표별 마커 */}
+          {customIcon && filteredProperties.map((prop) => (
+            <Marker
+              key={prop.id}
+              position={[prop.lat, prop.lng]}
+              icon={customIcon}
+              eventHandlers={{
+                click: () => setSelectedProperty(prop)
+              }}
+            />
+          ))}
         </MapContainer>
       </div>
 
