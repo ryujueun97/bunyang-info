@@ -5,12 +5,10 @@ import dynamic from 'next/dynamic';
 import { Search, Plus, Minus, MapPin, X, PhoneCall } from 'lucide-react';
 import type { FeatureCollection } from 'geojson';
 
-// Leaflet 기본 스타일 불러오기
 import 'leaflet/dist/leaflet.css';
 
-// Leaflet 지도 및 GeoLayer Dynamic Load (SSR 에러 100% 방지)
 const MapContainer = dynamic(
-  () => import('react-[#leaflet]').then((mod) => mod.MapContainer),
+  () => import('react-leaflet').then((mod) => mod.MapContainer),
   { ssr: false }
 );
 const KoreaGeoLayer = dynamic(() => import('./KoreaGeoLayer'), { ssr: false });
@@ -144,6 +142,7 @@ export default function MapView() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
   const [geoData, setGeoData] = useState<FeatureCollection | null>(null);
+  const [zoomLevel, setZoomLevel] = useState<number>(7);
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -156,44 +155,69 @@ export default function MapView() {
       });
   }, []);
 
+  const filteredProperties = REPRESENTATIVE_PROPERTIES.filter(
+    (prop) =>
+      prop.title.includes(searchQuery) ||
+      prop.province.includes(searchQuery) ||
+      prop.city.includes(searchQuery) ||
+      prop.address.includes(searchQuery)
+  );
+
   if (!isMounted) return null;
 
   return (
     <div className="relative w-full h-[calc(100vh-53px)] bg-slate-100 flex items-center justify-center overflow-hidden">
       
-      {/* 검색 바 */}
+      {/* 1. 상단 시·군·구 검색 바 */}
       <div className="absolute top-4 z-20 w-11/12 max-w-md">
         <div className="relative flex items-center bg-white rounded-xl shadow-md border border-slate-200">
           <Search className="w-5 h-5 text-slate-400 ml-3.5 flex-shrink-0" />
           <input 
             type="text" 
-            placeholder="시·군·구 검색 예: 음성군, 달성군"
+            placeholder="시·군·구 검색 예: 음성군, 달성군, 전주시"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full py-3 px-3 text-sm bg-transparent focus:outline-none text-slate-700"
+            className="w-full py-3 px-3 text-sm bg-transparent focus:outline-none text-slate-700 font-medium"
           />
         </div>
       </div>
 
-      {/* React-Leaflet 지도로 KoreaGeoLayer 및 오버레이 마커 구성 */}
+      {/* 2. Zoom (+ / -) 버튼 */}
+      <div className="absolute top-4 left-4 z-20 flex flex-col bg-white rounded-lg border border-slate-200 shadow-md overflow-hidden">
+        <button 
+          onClick={() => setZoomLevel((prev) => Math.min(prev + 1, 10))}
+          className="p-2.5 hover:bg-slate-50 border-b border-slate-200 text-slate-700 transition"
+          title="확대"
+        >
+          <Plus className="w-4 h-4" />
+        </button>
+        <button 
+          onClick={() => setZoomLevel((prev) => Math.max(prev - 1, 5))}
+          className="p-2.5 hover:bg-slate-50 text-slate-700 transition"
+          title="축소"
+        >
+          <Minus className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* 3. KoreaGeoLayer 결합 지도 영역 */}
       <div className="w-full h-full">
         {geoData && (
           <MapContainer
             center={[36.0, 127.8]}
-            zoom={7}
+            zoom={zoomLevel}
             zoomControl={false}
             className="w-full h-full bg-slate-100"
           >
-            {/* KoreaGeoLayer 정상 결합 */}
             <KoreaGeoLayer
               geo={geoData}
               selectedCode={selectedCode}
               onSelect={(region) => setSelectedCode(region.code)}
             />
 
-            {/* 카드 핀 오버레이 (클릭 시 팝업) */}
+            {/* 4. 대표 분양 핀 카드 고정 연동 */}
             <div className="leaflet-pane leaflet-popup-pane">
-              {REPRESENTATIVE_PROPERTIES.map((prop) => (
+              {filteredProperties.map((prop) => (
                 <div
                   key={prop.id}
                   onClick={() => setSelectedProperty(prop)}
@@ -207,7 +231,7 @@ export default function MapView() {
                         className="w-full h-full object-cover" 
                       />
                       <span className="absolute top-1 left-1 bg-cyan-500 text-white font-bold text-[8px] px-1 py-0.2 rounded shadow-sm">
-                        분양중
+                        {prop.status}
                       </span>
                     </div>
                     <div className="p-1 text-center bg-white">
@@ -224,7 +248,7 @@ export default function MapView() {
         )}
       </div>
 
-      {/* 상세 팝업 모달 */}
+      {/* 5. 상세 분양 모달 팝업 */}
       {selectedProperty && (
         <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-150">
