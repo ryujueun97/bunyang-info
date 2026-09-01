@@ -1,12 +1,21 @@
 'use client';
 
 import React, { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { 
-  Menu, X, Search, PhoneCall, ChevronRight, ChevronDown, 
-  MapPin, Building, Filter, CheckCircle2, Clock, AlertCircle, RefreshCw, Navigation,
-  FileText, Users, Award, ShieldCheck
+  Menu, X, PhoneCall, ChevronRight, ChevronDown, 
+  Building, FileText, Users, Award, ShieldCheck
 } from 'lucide-react';
-import MapView from '@/components/MapView';
+
+// 기존 MapView 컴포넌트를 서버 사이드 렌더링(SSR) 없이 클라이언트에서만 불러오도록 설정
+const MapView = dynamic(() => import('@/components/MapView'), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-full flex items-center justify-center bg-slate-100 text-slate-500 font-bold text-sm">
+      지도를 불러오는 중입니다...
+    </div>
+  ),
+});
 
 interface Property {
   id: string;
@@ -19,9 +28,6 @@ interface Property {
   image: string;
   lat: number; 
   lng: number;
-  areaSize?: string;
-  price?: string;
-  description?: string;
 }
 
 const PROPERTIES: Property[] = [
@@ -36,9 +42,6 @@ const PROPERTIES: Property[] = [
     image: 'https://images.unsplash.com/photo-1541888946425-d0fbb186a5b3?auto=format&fit=crop&w=600&q=80',
     lat: 38,
     lng: 48,
-    areaSize: '1,200,000m²',
-    price: '평당 약 150만원~',
-    description: '바이오 헬스케어 및 첨단 소재 기업 중심 입지.'
   },
   {
     id: '2',
@@ -51,9 +54,6 @@ const PROPERTIES: Property[] = [
     image: 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?auto=format&fit=crop&w=600&q=80',
     lat: 48,
     lng: 70,
-    areaSize: '850,000m²',
-    price: '평당 약 120만원~',
-    description: '자동차 부품 및 금속 가공 특화 산업단지.'
   },
   {
     id: '3',
@@ -66,9 +66,6 @@ const PROPERTIES: Property[] = [
     image: 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=600&q=80',
     lat: 25,
     lng: 40,
-    areaSize: '2,100,000m²',
-    price: '평당 약 280만원~',
-    description: '삼성전자 평택캠퍼스 인접 첨단 클러스터.'
   }
 ];
 
@@ -157,10 +154,10 @@ export default function BunyangPage() {
         </div>
       )}
 
-      {/* 원래 제작해두신 지도 컴포넌트 메인 렌더링 영역 */}
+      {/* 메인 지도 렌더링 영역 */}
       <main className="flex-1 relative w-full h-[calc(100vh-53px)] overflow-hidden">
         
-        {/* 기존 지도 컴포넌트 불러오기 */}
+        {/* 기존 MapView 컴포넌트 동적 로드 */}
         <MapView />
 
         {/* 지도 위에 작게 떠있는 소형 아이콘 카드 마커들 */}
