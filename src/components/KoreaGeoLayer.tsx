@@ -5,7 +5,6 @@ import { GeoJSON, useMap } from 'react-leaflet'
 import type { FeatureCollection } from 'geojson'
 import L from 'leaflet'
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 
 export type SelectedRegion = {
   code: string | null
@@ -16,8 +15,6 @@ type Props = {
   geo: FeatureCollection
   selectedCode: string | null
   onSelect: (v: SelectedRegion) => void
-  autoFitOnSelect?: boolean
-  regionCountMap?: Record<string, number>
 }
 
 function normalizeKoreanSpacing(s: string): string {
@@ -34,7 +31,7 @@ function toStr(v: any): string | null {
 }
 
 function pickCode(p: Record<string, any>): string | null {
-  const candidates = ['SIG_CD', 'sig_cd', 'SGG_CD', 'sgg_cd', 'ADM_CD', 'adm_cd']
+  const candidates = ['SIG_CD', 'sig_cd', 'CTPRVN_CD', 'ctprvn_cd', 'ADM_CD']
   for (const k of candidates) {
     const v = toStr(p?.[k])
     if (v && !v.includes('ARB')) return v
@@ -43,7 +40,7 @@ function pickCode(p: Record<string, any>): string | null {
 }
 
 function pickName(p: Record<string, any>): string {
-  const candidates = ['SIG_KOR_NM', 'sig_kor_nm', 'SIG_NM', 'sig_nm', 'SGG_NM', 'sgg_nm']
+  const candidates = ['CTP_KOR_NM', 'ctp_kor_nm', 'SIG_KOR_NM', 'sig_kor_nm', 'SIG_NM']
   for (const k of candidates) {
     const v = toStr(p?.[k])
     if (v) return normalizeKoreanSpacing(v)
@@ -55,10 +52,8 @@ export default function KoreaGeoLayer({
   geo,
   selectedCode,
   onSelect,
-  regionCountMap = {},
 }: Props) {
   const map = useMap()
-  const router = useRouter()
   const [paneReady, setPaneReady] = useState(false)
 
   useEffect(() => {
@@ -67,7 +62,6 @@ export default function KoreaGeoLayer({
     if (!pane) {
       pane = map.createPane(paneName)
     }
-    // 📌 핵심: 마커(zIndex: 600 이상)보다 지도가 항상 밑에깔리도록 zIndex를 400으로 낮춤
     pane.style.zIndex = '400'
     pane.style.pointerEvents = 'auto'
     setPaneReady(true)
@@ -76,28 +70,28 @@ export default function KoreaGeoLayer({
   const getStyleForFeature = (feature: any, isHover = false, isSelected = false): L.PathOptions => {
     if (isSelected) {
       return {
-        weight: 2,
+        weight: 2.5,
         color: '#0284c7',
         fillColor: '#38bdf8',
-        fillOpacity: 0.8,
+        fillOpacity: 0.85,
       }
     }
 
     if (isHover) {
       return {
-        weight: 1.5,
+        weight: 2,
         color: '#0369a1',
         fillColor: '#bae6fd',
         fillOpacity: 0.8,
       }
     }
 
-    // 📌 대한민국 지도 기본 면 색상 설정 (화사한 파스텔 블루 톤)
+    // 광역시/도 단위 선명한 경계 및 연한 민트/하늘 바탕 스타일링
     return {
-      weight: 0.8,
-      color: '#94a3b8',
+      weight: 1.2,
+      color: '#64748b',
       fillColor: '#f1f5f9',
-      fillOpacity: 0.9,
+      fillOpacity: 0.95,
     }
   }
 
@@ -128,7 +122,7 @@ export default function KoreaGeoLayer({
     })
   }
 
-  if (!paneReady) return null
+  if (!paneReady || !geo || !geo.features || geo.features.length === 0) return null
 
   return (
     <GeoJSON

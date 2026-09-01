@@ -152,12 +152,14 @@ export default function MapView() {
   useEffect(() => {
     setIsMounted(true);
 
-    // 📌 시·도 큰 단위 경계선 데이터 순차 로딩 (public/geo/ 내 파일 우선 연결)
-    fetch('/geo/kor_sido_test_b.json')
-      .then((res) => res.json())
+    // 실제 존재하는 로컬 지점 파일 로드 ➔ 실패 시 안정적인 온라인 원본 fallback
+    fetch('/geo/kor_sig.geojson')
+      .then((res) => {
+        if (!res.ok) throw new Error('Local file not found');
+        return res.json();
+      })
       .then((data) => setGeoData(data))
       .catch(() => {
-        // 온라인 백업 광역시/도 경계 데이터
         fetch('https://raw.githubusercontent.com/southkorea/southkorea-maps/master/kostat/2013/json/skorea_provinces_2013_geo.json')
           .then((res) => res.json())
           .then((data) => setGeoData(data))
@@ -222,7 +224,7 @@ export default function MapView() {
         </div>
       </div>
 
-      {/* 2. 지도 및 마커 영역 */}
+      {/* 2. 대한민국 지도 및 마커 */}
       <div className="w-full h-full relative">
         <MapContainer
           center={[36.0, 127.8]}
@@ -231,7 +233,6 @@ export default function MapView() {
           attributionControl={false}
           className="w-full h-full bg-[#e0f2fe]"
         >
-          {/* 대한민국 광역시/도 단위 경계 지도 */}
           {geoData && (
             <KoreaGeoLayer
               geo={geoData}
@@ -240,7 +241,6 @@ export default function MapView() {
             />
           )}
 
-          {/* 주요 카드 핀 */}
           {filteredProperties.map((prop) => (
             leafletIcons[prop.id] && (
               <Marker
