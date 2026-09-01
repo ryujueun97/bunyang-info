@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Plus, Minus, MapPin, X, PhoneCall } from 'lucide-react';
 import KoreaGeoLayer from './KoreaGeoLayer';
 
@@ -20,7 +20,7 @@ interface Property {
   description?: string;
 }
 
-// 각 도별 첫 번째(대표) 분양 공고
+// 각 도별 첫 번째 대표 분양 공고
 const REPRESENTATIVE_PROPERTIES: Property[] = [
   {
     id: '1',
@@ -133,9 +133,20 @@ export default function MapView() {
   const [zoomLevel, setZoomLevel] = useState<number>(1);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [geoData, setGeoData] = useState<any>(null);
+  const [selectedCode, setSelectedCode] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch('/korea.json')
+      .then(res => res.json())
+      .then(data => setGeoData(data))
+      .catch(() => setGeoData({ type: 'FeatureCollection', features: [] }));
+  }, []);
 
   const handleZoomIn = () => setZoomLevel(prev => Math.min(prev + 0.25, 2.5));
   const handleZoomOut = () => setZoomLevel(prev => Math.max(prev - 0.25, 0.75));
+
+  const GeoLayerComponent = KoreaGeoLayer as any;
 
   return (
     <div className="relative w-full h-full bg-slate-100 flex items-center justify-center overflow-hidden">
@@ -172,19 +183,23 @@ export default function MapView() {
         </button>
       </div>
 
-      {/* 지도 & 핀 동기화 영역 */}
+      {/* 지도 & 핀 컨테이너 (줌/이동 시 완벽 고정) */}
       <div 
         className="w-full h-full flex items-center justify-center transition-transform duration-200 ease-out"
         style={{ transform: `scale(${zoomLevel})` }}
       >
-        <div className="relative w-full h-full max-h-[650px] flex items-center justify-center">
+        <div className="relative w-full h-full max-h-[650px] flex items-center justify-center overflow-hidden">
           
-          {/* 1. 원래 정밀 대한민국 지도 (KoreaGeoLayer) */}
+          {/* KoreaGeoLayer 렌더링 (필수 props 전달) */}
           <div className="w-full h-full [&_path]:stroke-red-500/80 [&_path]:stroke-[0.8] [&_path]:fill-slate-50 hover:[&_path]:fill-red-50 transition">
-            <KoreaGeoLayer />
+            <GeoLayerComponent 
+              geo={geoData || { type: 'FeatureCollection', features: [] }}
+              selectedCode={selectedCode}
+              onSelect={(code: string | null) => setSelectedCode(code)}
+            />
           </div>
 
-          {/* 2. 지도 오버레이 카드 핀 */}
+          {/* 지도 오버레이 대표 카드 핀 */}
           <div className="absolute inset-0 w-full h-full pointer-events-none">
             {REPRESENTATIVE_PROPERTIES.map((prop) => (
               <div 
