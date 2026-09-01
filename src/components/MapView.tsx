@@ -1,8 +1,32 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, Component } from 'react';
 import { Search, Plus, Minus, MapPin, X, PhoneCall } from 'lucide-react';
 import KoreaGeoLayer from './KoreaGeoLayer';
+
+// 클라이언트 런타임 에러 방지용 안전 래퍼 (Error Boundary)
+class MapErrorBoundary extends Component<{ children: React.ReactNode }, { hasError: boolean }> {
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(error: any) {
+    console.error("KoreaGeoLayer rendering error:", error);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="w-full h-full flex items-center justify-center text-xs text-slate-400 font-bold">
+          지도를 레이어링하는 중입니다...
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 interface Property {
   id: string;
@@ -174,22 +198,24 @@ export default function MapView() {
         </button>
       </div>
 
-      {/* 지도 및 핀 오버레이 컨테이너 */}
+      {/* 지도 및 핀 영역 */}
       <div 
         className="w-full h-full flex items-center justify-center transition-transform duration-200 ease-out"
         style={{ transform: `scale(${zoomLevel})` }}
       >
         <div className="relative w-full h-full max-h-[650px] flex items-center justify-center overflow-hidden">
           
-          {/* KoreaGeoLayer 본체 */}
+          {/* 에러 바운더리로 보호된 KoreaGeoLayer */}
           <div className="w-full h-full [&_path]:stroke-red-500/80 [&_path]:stroke-[0.8] [&_path]:fill-slate-50 hover:[&_path]:fill-red-50 transition">
-            <GeoLayerComponent 
-              selectedCode={selectedCode}
-              onSelect={(code: string | null) => setSelectedCode(code)}
-            />
+            <MapErrorBoundary>
+              <GeoLayerComponent 
+                selectedCode={selectedCode}
+                onSelect={(code: string | null) => setSelectedCode(code)}
+              />
+            </MapErrorBoundary>
           </div>
 
-          {/* 지도 오버레이 대표 카드 핀 */}
+          {/* 오버레이 대표 카드 핀 */}
           <div className="absolute inset-0 w-full h-full pointer-events-none">
             {REPRESENTATIVE_PROPERTIES.map((prop) => (
               <div 
@@ -228,7 +254,7 @@ export default function MapView() {
         </div>
       </div>
 
-      {/* 상세 팝업 모달 */}
+      {/* 팝업 모달 */}
       {selectedProperty && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden z-10 animate-in zoom-in-95 duration-150">
