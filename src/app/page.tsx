@@ -2,12 +2,8 @@
 
 import React, { useState } from 'react';
 import dynamic from 'next/dynamic';
-import { 
-  Menu, X, PhoneCall, ChevronRight, ChevronDown, 
-  Building, FileText, Users, Award, ShieldCheck
-} from 'lucide-react';
+import { Menu, X, PhoneCall, ChevronRight, ChevronDown, Building, FileText, Users, Award, ShieldCheck } from 'lucide-react';
 
-// 기존 MapView 컴포넌트를 서버 사이드 렌더링(SSR) 없이 클라이언트에서만 불러오도록 설정
 const MapView = dynamic(() => import('@/components/MapView'), {
   ssr: false,
   loading: () => (
@@ -30,6 +26,7 @@ interface Property {
   lng: number;
 }
 
+// 지도 축적 기준에 맞춘 정확한 위경도 비율 좌표 조정
 const PROPERTIES: Property[] = [
   {
     id: '1',
@@ -39,8 +36,8 @@ const PROPERTIES: Property[] = [
     status: '분양중',
     category: '산업단지',
     address: '충청북도 청주시 흥덕구 오송읍',
-    image: 'https://images.unsplash.com/photo-1541888946425-d0fbb186a5b3?auto=format&fit=crop&w=600&q=80',
-    lat: 38,
+    image: 'https://images.unsplash.com/photo-1541888946425-d0fbb186a5b3?auto=format&fit=crop&w=400&q=80',
+    lat: 44,
     lng: 48,
   },
   {
@@ -51,9 +48,9 @@ const PROPERTIES: Property[] = [
     status: '분양중',
     category: '산업단지',
     address: '경상북도 경산시 진량읍',
-    image: 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?auto=format&fit=crop&w=600&q=80',
-    lat: 48,
-    lng: 70,
+    image: 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?auto=format&fit=crop&w=400&q=80',
+    lat: 56,
+    lng: 58,
   },
   {
     id: '3',
@@ -63,9 +60,9 @@ const PROPERTIES: Property[] = [
     status: '분양중',
     category: '복합단지',
     address: '경기도 평택시 고덕면',
-    image: 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=600&q=80',
-    lat: 25,
-    lng: 40,
+    image: 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=400&q=80',
+    lat: 28,
+    lng: 39,
   }
 ];
 
@@ -77,7 +74,7 @@ export default function BunyangPage() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans">
       
-      {/* 상단 헤더 (브랜드명: 분양HUB) */}
+      {/* 상단 헤더 */}
       <header className="sticky top-0 z-30 bg-white border-b border-slate-200 px-4 lg:px-6 py-2.5 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-3">
           <button 
@@ -103,7 +100,7 @@ export default function BunyangPage() {
         </div>
       </header>
 
-      {/* 회사소개 전용 메뉴 슬라이드 */}
+      {/* 회사소개 서브메뉴 */}
       {isDrawerOpen && (
         <div className="fixed inset-0 z-50 flex">
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsDrawerOpen(false)} />
@@ -154,13 +151,11 @@ export default function BunyangPage() {
         </div>
       )}
 
-      {/* 메인 지도 렌더링 영역 */}
+      {/* 메인 지도 화면 */}
       <main className="flex-1 relative w-full h-[calc(100vh-53px)] overflow-hidden">
-        
-        {/* 기존 MapView 컴포넌트 동적 로드 */}
         <MapView />
 
-        {/* 지도 위에 작게 떠있는 소형 아이콘 카드 마커들 */}
+        {/* 미니 핀 카드 마커 */}
         <div className="absolute inset-0 pointer-events-none z-20">
           {PROPERTIES.map((p) => (
             <div 
@@ -170,25 +165,24 @@ export default function BunyangPage() {
               onClick={() => setSelectedProperty(p)}
             >
               <div className="flex flex-col items-center">
-                <div className="bg-white border border-slate-300 shadow-md rounded-md overflow-hidden w-20 sm:w-24 transition transform group-hover:scale-110 group-hover:border-red-500">
-                  <div className="relative h-9 w-full bg-slate-100">
+                <div className="bg-white/95 backdrop-blur-sm border border-slate-300 shadow-lg rounded-lg overflow-hidden w-24 sm:w-28 transition transform group-hover:scale-105 group-hover:border-red-500">
+                  <div className="relative h-11 w-full bg-slate-100">
                     <img src={p.image} alt={p.title} className="w-full h-full object-cover" />
-                    <span className="absolute top-0.5 left-0.5 bg-cyan-500 text-white font-bold text-[7px] px-1 py-0.2 rounded">
+                    <span className="absolute top-1 left-1 bg-cyan-500 text-white font-bold text-[8px] px-1 rounded shadow-sm">
                       분양중
                     </span>
                   </div>
                   <div className="p-1 text-center bg-white">
-                    <span className="block font-bold text-[9px] text-slate-800 truncate leading-tight">
+                    <span className="block font-extrabold text-[10px] text-slate-900 truncate leading-tight">
                       {p.title}
                     </span>
                   </div>
                 </div>
-                <div className="w-2 h-2 bg-red-600 rounded-full border border-white shadow -mt-0.5" />
+                <div className="w-2.5 h-2.5 bg-red-600 rounded-full border-2 border-white shadow -mt-1" />
               </div>
             </div>
           ))}
         </div>
-
       </main>
 
     </div>
