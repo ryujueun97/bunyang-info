@@ -4,11 +4,12 @@ import React, { useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Menu, X, PhoneCall, ChevronRight, ChevronDown, Building, FileText, Users, Award, ShieldCheck } from 'lucide-react';
 
+// SSR(서버사이드 렌더링)을 OFF 하여 window is not defined 에러 방지
 const MapView = dynamic(() => import('@/components/MapView'), {
   ssr: false,
   loading: () => (
     <div className="w-full h-full flex items-center justify-center bg-slate-100 text-slate-500 font-bold text-sm">
-      지도를 불러오는 중입니다...
+      대한민국 지도 엔진을 불러오는 중입니다...
     </div>
   ),
 });
@@ -20,7 +21,7 @@ export default function BunyangPage() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans">
       
-      {/* 1. 상단 헤더 */}
+      {/* 1. TOP HEADER */}
       <header className="sticky top-0 z-30 bg-white border-b border-slate-200 px-4 lg:px-6 py-2.5 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-3">
           <button 
@@ -46,7 +47,7 @@ export default function BunyangPage() {
         </div>
       </header>
 
-      {/* 2. 회사소개 전용 메뉴 슬라이드 */}
+      {/* 2. DRAWER MENU */}
       {isDrawerOpen && (
         <div className="fixed inset-0 z-50 flex">
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsDrawerOpen(false)} />
@@ -97,7 +98,7 @@ export default function BunyangPage() {
         </div>
       )}
 
-      {/* 3. 지도 렌더링 영역 */}
+      {/* 3. MAIN MAP CONTAINER */}
       <main className="flex-1 relative w-full h-[calc(100vh-53px)] overflow-hidden">
         <MapView />
       </main>
