@@ -1,32 +1,8 @@
 'use client';
 
-import React, { useState, Component } from 'react';
+import React, { useState } from 'react';
 import { Search, Plus, Minus, MapPin, X, PhoneCall } from 'lucide-react';
 import KoreaGeoLayer from './KoreaGeoLayer';
-
-// 클라이언트 런타임 에러 방지용 안전 래퍼 (Error Boundary)
-class MapErrorBoundary extends Component<{ children: React.ReactNode }, { hasError: boolean }> {
-  constructor(props: any) {
-    super(props);
-    this.state = { hasError: false };
-  }
-  static getDerivedStateFromError() {
-    return { hasError: true };
-  }
-  componentDidCatch(error: any) {
-    console.error("KoreaGeoLayer rendering error:", error);
-  }
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="w-full h-full flex items-center justify-center text-xs text-slate-400 font-bold">
-          지도를 레이어링하는 중입니다...
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
 
 interface Property {
   id: string;
@@ -54,8 +30,8 @@ const REPRESENTATIVE_PROPERTIES: Property[] = [
     category: '산업단지',
     address: '충청북도 청주시 흥덕구 오송읍',
     image: 'https://images.unsplash.com/photo-1541888946425-d0fbb186a5b3?auto=format&fit=crop&w=600&q=80',
-    svgX: 245,
-    svgY: 245,
+    svgX: 250,
+    svgY: 260,
     areaSize: '1,200,000m²',
     price: '평당 약 150만원~',
     description: '바이오 헬스케어 및 첨단 소재 기업 중심 입지, KTX 오송역 인접.'
@@ -69,8 +45,8 @@ const REPRESENTATIVE_PROPERTIES: Property[] = [
     category: '산업단지',
     address: '경상북도 경산시 진량읍',
     image: 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?auto=format&fit=crop&w=600&q=80',
-    svgX: 330,
-    svgY: 270,
+    svgX: 350,
+    svgY: 300,
     areaSize: '850,000m²',
     price: '평당 약 120만원~',
     description: '자동차 부품 및 금속 가공 특화 산업단지, 경부고속도로 인접.'
@@ -84,8 +60,8 @@ const REPRESENTATIVE_PROPERTIES: Property[] = [
     category: '복합단지',
     address: '경기도 평택시 고덕면',
     image: 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=600&q=80',
-    svgX: 190,
-    svgY: 160,
+    svgX: 200,
+    svgY: 180,
     areaSize: '2,100,000m²',
     price: '평당 약 280만원~',
     description: '삼성전자 평택캠퍼스 인접, 첨단 반도체 클러스터 공급 단지.'
@@ -99,8 +75,8 @@ const REPRESENTATIVE_PROPERTIES: Property[] = [
     category: '산업단지',
     address: '강원특별자치도 원주시 문막읍',
     image: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=600&q=80',
-    svgX: 285,
-    svgY: 135,
+    svgX: 300,
+    svgY: 150,
     areaSize: '620,000m²',
     price: '평당 약 95만원~',
     description: '수도권 접근성 우수, 친환경 에너지 특화 산업단지.'
@@ -114,8 +90,8 @@ const REPRESENTATIVE_PROPERTIES: Property[] = [
     category: '국가산업단지',
     address: '경상남도 창원시 성산구',
     image: 'https://images.unsplash.com/photo-1541888946425-d0fbb186a5b3?auto=format&fit=crop&w=600&q=80',
-    svgX: 285,
-    svgY: 390,
+    svgX: 300,
+    svgY: 420,
     areaSize: '1,500,000m²',
     price: '평당 약 210만원~',
     description: '기계·방산 클러스터 중심지, 최첨단 스마트 그린산단.'
@@ -129,8 +105,8 @@ const REPRESENTATIVE_PROPERTIES: Property[] = [
     category: '국가산업단지',
     address: '전라북도 전주시 덕진구',
     image: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=600&q=80',
-    svgX: 185,
-    svgY: 330,
+    svgX: 190,
+    svgY: 360,
     areaSize: '650,000m²',
     price: '평당 약 110만원~',
     description: '대한민국 탄소산업 허브 메카 산업단지.'
@@ -144,8 +120,8 @@ const REPRESENTATIVE_PROPERTIES: Property[] = [
     category: '물류산업단지',
     address: '전라남도 여수시 율촌면',
     image: 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=600&q=80',
-    svgX: 160,
-    svgY: 430,
+    svgX: 170,
+    svgY: 460,
     areaSize: '980,000m²',
     price: '평당 약 88만원~',
     description: '광양항 인접 항만물류 및 석유화학 연계 단지.'
@@ -164,7 +140,7 @@ export default function MapView() {
   const GeoLayerComponent = KoreaGeoLayer as any;
 
   return (
-    <div className="relative w-full h-full bg-slate-100 flex items-center justify-center overflow-hidden">
+    <div className="relative w-full h-[calc(100vh-53px)] bg-slate-100 flex items-center justify-center overflow-hidden">
       
       {/* 검색 바 */}
       <div className="absolute top-4 z-20 w-11/12 max-w-md">
@@ -198,36 +174,36 @@ export default function MapView() {
         </button>
       </div>
 
-      {/* 지도 및 핀 영역 */}
+      {/* 캔버스 전체 영역 */}
       <div 
         className="w-full h-full flex items-center justify-center transition-transform duration-200 ease-out"
         style={{ transform: `scale(${zoomLevel})` }}
       >
-        <div className="relative w-full h-full max-h-[650px] flex items-center justify-center overflow-hidden">
+        <div className="relative w-full h-full flex items-center justify-center p-4">
           
-          {/* 에러 바운더리로 보호된 KoreaGeoLayer */}
-          <div className="w-full h-full [&_path]:stroke-red-500/80 [&_path]:stroke-[0.8] [&_path]:fill-slate-50 hover:[&_path]:fill-red-50 transition">
-            <MapErrorBoundary>
+          <svg className="w-full h-full max-w-[600px] max-h-[700px] select-none" viewBox="0 0 500 650">
+            {/* 1. KoreaGeoLayer 지도 본체 */}
+            <g className="[&_path]:stroke-red-500/80 [&_path]:stroke-[0.8] [&_path]:fill-slate-50 hover:[&_path]:fill-red-50 transition">
               <GeoLayerComponent 
                 selectedCode={selectedCode}
                 onSelect={(code: string | null) => setSelectedCode(code)}
               />
-            </MapErrorBoundary>
-          </div>
+            </g>
 
-          {/* 오버레이 대표 카드 핀 */}
-          <div className="absolute inset-0 w-full h-full pointer-events-none">
+            {/* 2. SVG 고정 핀 마커 */}
             {REPRESENTATIVE_PROPERTIES.map((prop) => (
-              <div 
+              <foreignObject
                 key={prop.id}
-                style={{ 
-                  left: `${(prop.svgX / 500) * 100}%`, 
-                  top: `${(prop.svgY / 650) * 100}%` 
-                }}
-                className="absolute transform -translate-x-1/2 -translate-y-1/2 pointer-events-auto cursor-pointer group"
-                onClick={() => setSelectedProperty(prop)}
+                x={prop.svgX - 55}
+                y={prop.svgY - 45}
+                width="110"
+                height="75"
+                className="overflow-visible"
               >
-                <div className="flex flex-col items-center">
+                <div 
+                  onClick={() => setSelectedProperty(prop)}
+                  className="cursor-pointer group flex flex-col items-center"
+                >
                   <div className="w-[105px] bg-white/95 backdrop-blur-sm border border-slate-300 rounded-lg shadow-md overflow-hidden transition transform group-hover:scale-105 group-hover:border-red-500">
                     <div className="relative h-11 w-full bg-slate-200">
                       <img 
@@ -247,14 +223,14 @@ export default function MapView() {
                   </div>
                   <div className="w-2.5 h-2.5 bg-red-600 rounded-full border-2 border-white shadow -mt-0.5 animate-pulse" />
                 </div>
-              </div>
+              </foreignObject>
             ))}
-          </div>
+          </svg>
 
         </div>
       </div>
 
-      {/* 팝업 모달 */}
+      {/* 상세 팝업 모달 */}
       {selectedProperty && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden z-10 animate-in zoom-in-95 duration-150">
