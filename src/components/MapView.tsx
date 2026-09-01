@@ -162,15 +162,15 @@ export default function MapView() {
           .catch(() => setGeoData({ type: 'FeatureCollection', features: [] }));
       });
 
-    // Leaflet 최상단 z-index(1500)를 적용한 클릭 가능 마커 아이콘 생성
+    // 📌 Leaflet 최상단 커스텀 카드 마커 핀 생성
     import('leaflet').then((L) => {
       const iconMap: Record<string, any> = {};
       REPRESENTATIVE_PROPERTIES.forEach((prop) => {
         iconMap[prop.id] = L.divIcon({
           className: 'custom-card-marker-clickable',
           html: `
-            <div style="display:flex; flex-direction:column; align-items:center; transform: translate(-50%, -100%); width: 105px; pointer-events: auto; cursor: pointer; z-index: 1500;">
-              <div style="width:105px; background:rgba(255,255,255,0.95); border:1px solid #cbd5e1; border-radius:8px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.15); overflow:hidden;">
+            <div style="display:flex; flex-direction:column; align-items:center; transform: translate(-50%, -100%); width: 105px; cursor: pointer;">
+              <div style="width:105px; background:rgba(255,255,255,0.98); border:1.5px solid #0284c7; border-radius:8px; box-shadow:0 8px 16px rgba(0,0,0,0.2); overflow:hidden;">
                 <div style="position:relative; height:44px; width:100%; background:#e2e8f0;">
                   <img src="${prop.image}" alt="${prop.title}" style="width:100%; height:100%; object-fit:cover;" />
                   <span style="position:absolute; top:4px; left:4px; background:#06b6d4; color:#ffffff; font-weight:bold; font-size:8px; padding:1px 4px; border-radius:3px;">
@@ -178,7 +178,7 @@ export default function MapView() {
                   </span>
                 </div>
                 <div style="padding:4px; text-align:center; background:#ffffff;">
-                  <span style="display:block; font-weight:800; font-size:10px; color:#1e293b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                  <span style="display:block; font-weight:800; font-size:10px; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
                     ${prop.title}
                   </span>
                 </div>
@@ -205,7 +205,7 @@ export default function MapView() {
   if (!isMounted) return null;
 
   return (
-    <div className="relative w-full h-[calc(100vh-53px)] bg-slate-100 flex items-center justify-center overflow-hidden [&_.leaflet-control-attribution]:hidden">
+    <div className="relative w-full h-[calc(100vh-53px)] bg-[#e0f2fe] flex items-center justify-center overflow-hidden [&_.leaflet-control-attribution]:hidden">
       
       {/* 1. 상단 시·군·구 검색 바 */}
       <div className="absolute top-4 z-[2000] w-11/12 max-w-md">
@@ -221,16 +221,16 @@ export default function MapView() {
         </div>
       </div>
 
-      {/* 2. 한국 지도 전용 깔끔한 Canvas 영역 (지형 배경 전면 제거) */}
+      {/* 2. 바다 배경 위에 떠있는 대한민국 지도 및 마커 */}
       <div className="w-full h-full relative">
         <MapContainer
           center={[36.0, 127.8]}
           zoom={7}
           zoomControl={true}
           attributionControl={false}
-          className="w-full h-full bg-slate-100"
+          className="w-full h-full bg-[#e0f2fe]"
         >
-          {/* TileLayer 전면 삭제 ➔ 대한민국 행정구역 윤곽만 단독 표출 */}
+          {/* 대한민국 시·군·구 행정구역 경계 지도 */}
           {geoData && (
             <KoreaGeoLayer
               geo={geoData}
@@ -239,14 +239,14 @@ export default function MapView() {
             />
           )}
 
-          {/* Leaflet 마커 (z-index 조절로 클릭 터치 100% 보장) */}
+          {/* 📌 zIndexOffset=5000 지정으로 카드 핀을 지도 선보다 완벽히 위에 띄움 */}
           {filteredProperties.map((prop) => (
             leafletIcons[prop.id] && (
               <Marker
                 key={prop.id}
                 position={[prop.lat, prop.lng]}
                 icon={leafletIcons[prop.id]}
-                zIndexOffset={2000}
+                zIndexOffset={5000}
                 eventHandlers={{
                   click: () => setSelectedProperty(prop)
                 }}
