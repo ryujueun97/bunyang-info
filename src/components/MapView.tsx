@@ -13,14 +13,13 @@ interface Property {
   category: string;
   address: string;
   image: string;
-  svgX: number; // 지도 SVG 내 X 좌표
-  svgY: number; // 지도 SVG 내 Y 좌표
+  svgX: number;
+  svgY: number;
   areaSize?: string;
   price?: string;
   description?: string;
 }
 
-// 각 도별 첫 번째(대표) 분양 공고 1건씩만 지정
 const REPRESENTATIVE_PROPERTIES: Property[] = [
   {
     id: '1',
@@ -140,7 +139,6 @@ export default function MapView() {
   return (
     <div className="relative w-full h-full bg-slate-100 flex items-center justify-center overflow-hidden">
       
-      {/* 검색 바 */}
       <div className="absolute top-4 z-20 w-11/12 max-w-md">
         <div className="relative flex items-center bg-white rounded-xl shadow-md border border-slate-200">
           <Search className="w-5 h-5 text-slate-400 ml-3.5 flex-shrink-0" />
@@ -154,7 +152,6 @@ export default function MapView() {
         </div>
       </div>
 
-      {/* 줌 컨트롤러 */}
       <div className="absolute top-4 left-4 z-20 flex flex-col bg-white rounded-lg border border-slate-200 shadow-md overflow-hidden">
         <button 
           onClick={handleZoomIn}
@@ -172,19 +169,16 @@ export default function MapView() {
         </button>
       </div>
 
-      {/* 지도 & 핀 마커 동기화 컨테이너 */}
       <div 
         className="w-full h-full flex items-center justify-center transition-transform duration-200 ease-out"
         style={{ transform: `scale(${zoomLevel})` }}
       >
         <div className="relative w-full h-full max-h-[650px] flex items-center justify-center">
           
-          {/* 1. 원래 제작해두신 정밀 대한민국 지도 레이어 */}
           <div className="w-full h-full [&_path]:stroke-red-400 [&_path]:stroke-[0.8] [&_path]:fill-slate-50 hover:[&_path]:fill-red-50 transition">
             <KoreaGeoLayer />
           </div>
 
-          {/* 2. 지도와 함께 움직이는 SVG 핀 카드 오버레이 */}
           <svg className="absolute inset-0 w-full h-full pointer-events-none z-10" viewBox="0 0 500 650">
             {REPRESENTATIVE_PROPERTIES.map((prop) => (
               <foreignObject 
@@ -224,7 +218,6 @@ export default function MapView() {
         </div>
       </div>
 
-      {/* 상세 팝업 */}
       {selectedProperty && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden z-10 animate-in zoom-in-95 duration-150">
