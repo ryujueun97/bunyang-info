@@ -11,6 +11,14 @@ const MapContainer = dynamic(
   () => import('react-leaflet').then((mod) => mod.MapContainer),
   { ssr: false }
 );
+const TileLayer = dynamic(
+  () => import('react-leaflet').then((mod) => mod.TileLayer),
+  { ssr: false }
+);
+const Marker = dynamic(
+  () => import('react-leaflet').then((mod) => mod.Marker),
+  { ssr: false }
+);
 const KoreaGeoLayer = dynamic(() => import('./KoreaGeoLayer'), { ssr: false });
 
 interface Property {
@@ -143,10 +151,12 @@ export default function MapView() {
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
   const [geoData, setGeoData] = useState<any>(null);
   const [isMounted, setIsMounted] = useState(false);
+  const [leafletIcons, setLeafletIcons] = useState<Record<string, any>>({});
 
   useEffect(() => {
     setIsMounted(true);
 
+    // 저장소 내 지점 데이터 가져오기
     fetch('/geo/kor_sig.geojson')
       .then((res) => res.json())
       .then((data) => setGeoData(data))
@@ -156,6 +166,37 @@ export default function MapView() {
           .then((data) => setGeoData(data))
           .catch(() => setGeoData({ type: 'FeatureCollection', features: [] }));
       });
+
+    // Leaflet 커스텀 카드 아이콘 생성
+    import('leaflet').then((L) => {
+      const iconMap: Record<string, any> = {};
+      REPRESENTATIVE_PROPERTIES.forEach((prop) => {
+        iconMap[prop.id] = L.divIcon({
+          className: 'custom-card-marker',
+          html: `
+            <div style="display:flex; flex-direction:column; align-items:center; transform: translate(-50%, -100%); width: 105px;">
+              <div style="width:105px; background:rgba(255,255,255,0.95); border:1px solid #cbd5e1; border-radius:8px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.1); overflow:hidden;">
+                <div style="position:relative; height:44px; width:100%; background:#e2e8f0;">
+                  <img src="${prop.image}" alt="${prop.title}" style="width:100%; height:100%; object-fit:cover;" />
+                  <span style="position:absolute; top:4px; left:4px; background:#06b6d4; color:#ffffff; font-weight:bold; font-size:8px; padding:1px 4px; border-radius:3px;">
+                    ${prop.status}
+                  </span>
+                </div>
+                <div style="padding:4px; text-align:center; background:#ffffff;">
+                  <span style="display:block; font-weight:800; font-size:10px; color:#1e293b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                    ${prop.title}
+                  </span>
+                </div>
+              </div>
+              <div style="width:10px; height:10px; background:#dc2626; border:2px solid #ffffff; border-radius:50%; margin-top:-2px; box-shadow:0 2px 4px rgba(0,0,0,0.2);"></div>
+            </div>
+          `,
+          iconSize: [0, 0],
+          iconAnchor: [0, 0]
+        });
+      });
+      setLeafletIcons(iconMap);
+    });
   }, []);
 
   const filteredProperties = REPRESENTATIVE_PROPERTIES.filter(
@@ -171,7 +212,7 @@ export default function MapView() {
   return (
     <div className="relative w-full h-[calc(100vh-53px)] bg-slate-100 flex items-center justify-center overflow-hidden [&_.leaflet-control-attribution]:hidden">
       
-      {/* 1. 상단 시·군·구 검색 바 */}
+      {/* 1. 시·군·구 검색바 */}
       <div className="absolute top-4 z-[800] w-11/12 max-w-md">
         <div className="relative flex items-center bg-white rounded-xl shadow-md border border-slate-200">
           <Search className="w-5 h-5 text-slate-400 ml-3.5 flex-shrink-0" />
@@ -185,7 +226,7 @@ export default function MapView() {
         </div>
       </div>
 
-      {/* 2. 외부 배경 타일 제거된 깔끔 지도 영역 */}
+      {/* 2. Leaflet 타일 및 지도 결합 */}
       <div className="w-full h-full relative">
         <MapContainer
           center={[36.0, 127.8]}
@@ -194,7 +235,13 @@ export default function MapView() {
           attributionControl={false}
           className="w-full h-full bg-slate-100"
         >
-          {/* 외부 TileLayer 제거 ➔ 대한민국 정밀 지형만 선명하게 출력 */}
+          {/* 완전 무제한 무료 & API Key 필요 없는 OpenStreetMap 공식 타일 적용 */}
+          <TileLayer
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            maxZoom={19}
+          />
+
+          {/* 시·군·구 행정구역 경계 지도 */}
           {geoData && (
             <KoreaGeoLayer
               geo={geoData}
@@ -203,45 +250,23 @@ export default function MapView() {
             />
           )}
 
-          {/* 대한민국 지도 위 카드형 오버레이 마커 핀 */}
-          <div className="leaflet-pane leaflet-popup-pane">
-            {filteredProperties.map((prop) => (
-              <div
+          {/* Leaflet 마커 API를 활용한 카드 핀 렌더링 */}
+          {filteredProperties.map((prop) => (
+            leafletIcons[prop.id] && (
+              <Marker
                 key={prop.id}
-                onClick={() => setSelectedProperty(prop)}
-                className="absolute cursor-pointer transform -translate-x-1/2 -translate-y-1/2 z-[700] group"
-                style={{
-                  left: `${((prop.lng - 126.0) / 3.4) * 100}%`,
-                  top: `${((38.3 - prop.lat) / 4.4) * 100}%`
+                position={[prop.lat, prop.lng]}
+                icon={leafletIcons[prop.id]}
+                eventHandlers={{
+                  click: () => setSelectedProperty(prop)
                 }}
-              >
-                <div className="flex flex-col items-center">
-                  <div className="w-[105px] bg-white/95 backdrop-blur-sm border border-slate-300 rounded-lg shadow-md overflow-hidden transition transform group-hover:scale-105 group-hover:border-red-500">
-                    <div className="relative h-11 w-full bg-slate-200">
-                      <img 
-                        src={prop.image} 
-                        alt={prop.title} 
-                        className="w-full h-full object-cover" 
-                      />
-                      <span className="absolute top-1 left-1 bg-cyan-500 text-white font-bold text-[8px] px-1 py-0.2 rounded shadow-sm">
-                        {prop.status}
-                      </span>
-                    </div>
-                    <div className="p-1 text-center bg-white">
-                      <span className="block font-extrabold text-[10px] text-slate-800 truncate leading-tight">
-                        {prop.title}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="w-2.5 h-2.5 bg-red-600 rounded-full border-2 border-white shadow -mt-0.5 animate-pulse" />
-                </div>
-              </div>
-            ))}
-          </div>
+              />
+            )
+          ))}
         </MapContainer>
       </div>
 
-      {/* 3. 상세 모달 팝업 */}
+      {/* 3. 상세 팝업 모달 */}
       {selectedProperty && (
         <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-150">
