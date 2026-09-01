@@ -13,68 +13,14 @@ const MapView = dynamic(() => import('@/components/MapView'), {
   ),
 });
 
-interface Property {
-  id: string;
-  title: string;
-  province: string;
-  city: string;
-  status: '분양중' | '분양예정' | '분양완료';
-  category: string;
-  address: string;
-  image: string;
-  lat: number; 
-  lng: number;
-}
-
-// 지도 축적 기준에 맞춘 정확한 위경도 비율 좌표 조정
-const PROPERTIES: Property[] = [
-  {
-    id: '1',
-    title: '오송 바이오폴리스',
-    province: '충청북도',
-    city: '청주시',
-    status: '분양중',
-    category: '산업단지',
-    address: '충청북도 청주시 흥덕구 오송읍',
-    image: 'https://images.unsplash.com/photo-1541888946425-d0fbb186a5b3?auto=format&fit=crop&w=400&q=80',
-    lat: 44,
-    lng: 48,
-  },
-  {
-    id: '2',
-    title: '경산 4 일반산단',
-    province: '경상북도',
-    city: '경산시',
-    status: '분양중',
-    category: '산업단지',
-    address: '경상북도 경산시 진량읍',
-    image: 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?auto=format&fit=crop&w=400&q=80',
-    lat: 56,
-    lng: 58,
-  },
-  {
-    id: '3',
-    title: '평택 고덕 첨단단지',
-    province: '경기도',
-    city: '평택시',
-    status: '분양중',
-    category: '복합단지',
-    address: '경기도 평택시 고덕면',
-    image: 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=400&q=80',
-    lat: 28,
-    lng: 39,
-  }
-];
-
 export default function BunyangPage() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [activeSubMenu, setActiveSubMenu] = useState<string | null>('company');
-  const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans">
       
-      {/* 상단 헤더 */}
+      {/* 1. 상단 헤더 */}
       <header className="sticky top-0 z-30 bg-white border-b border-slate-200 px-4 lg:px-6 py-2.5 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-3">
           <button 
@@ -100,7 +46,7 @@ export default function BunyangPage() {
         </div>
       </header>
 
-      {/* 회사소개 서브메뉴 */}
+      {/* 2. 회사소개 전용 메뉴 슬라이드 */}
       {isDrawerOpen && (
         <div className="fixed inset-0 z-50 flex">
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsDrawerOpen(false)} />
@@ -151,38 +97,9 @@ export default function BunyangPage() {
         </div>
       )}
 
-      {/* 메인 지도 화면 */}
+      {/* 3. 지도 렌더링 영역 */}
       <main className="flex-1 relative w-full h-[calc(100vh-53px)] overflow-hidden">
         <MapView />
-
-        {/* 미니 핀 카드 마커 */}
-        <div className="absolute inset-0 pointer-events-none z-20">
-          {PROPERTIES.map((p) => (
-            <div 
-              key={p.id}
-              style={{ top: `${p.lat}%`, left: `${p.lng}%` }}
-              className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer pointer-events-auto group"
-              onClick={() => setSelectedProperty(p)}
-            >
-              <div className="flex flex-col items-center">
-                <div className="bg-white/95 backdrop-blur-sm border border-slate-300 shadow-lg rounded-lg overflow-hidden w-24 sm:w-28 transition transform group-hover:scale-105 group-hover:border-red-500">
-                  <div className="relative h-11 w-full bg-slate-100">
-                    <img src={p.image} alt={p.title} className="w-full h-full object-cover" />
-                    <span className="absolute top-1 left-1 bg-cyan-500 text-white font-bold text-[8px] px-1 rounded shadow-sm">
-                      분양중
-                    </span>
-                  </div>
-                  <div className="p-1 text-center bg-white">
-                    <span className="block font-extrabold text-[10px] text-slate-900 truncate leading-tight">
-                      {p.title}
-                    </span>
-                  </div>
-                </div>
-                <div className="w-2.5 h-2.5 bg-red-600 rounded-full border-2 border-white shadow -mt-1" />
-              </div>
-            </div>
-          ))}
-        </div>
       </main>
 
     </div>

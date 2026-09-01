@@ -1,449 +1,320 @@
-'use client'
+'use client';
 
-import { useEffect, useMemo, useState } from 'react'
-import { MapContainer, useMap } from 'react-leaflet'
-import { useRouter } from 'next/navigation'
-import type { FeatureCollection } from 'geojson'
-import L from 'leaflet'
+import React, { useState } from 'react';
+import { Search, Plus, Minus, CheckCircle2, MapPin, X, PhoneCall } from 'lucide-react';
 
-import KoreaGeoLayer, {
-  type SelectedRegion,
-} from './KoreaGeoLayer'
-
-import 'leaflet/dist/leaflet.css'
-
-// 현재 정상 작동 중인 지도 파일 경로
-// 파일 경로가 다르면 이 한 줄만 바꾸면 됨
-const GEO_URL = '/geo/kor_sig_simplified.geojson'
-
-type RegionOption = {
-  code: string
-  name: string
-  feature: any
+interface Property {
+  id: string;
+  title: string;
+  province: string;
+  city: string;
+  status: '분양중' | '분양예정' | '분양완료';
+  category: string;
+  address: string;
+  image: string;
+  svgX: number; // SVG 지도 내부 좌표 X
+  svgY: number; // SVG 지도 내부 좌표 Y
+  areaSize?: string;
+  price?: string;
+  description?: string;
 }
 
-function toText(value: unknown): string | null {
-  if (typeof value === 'string') {
-    const trimmed = value.trim()
-    return trimmed || null
+// 각 도별 첫 번째(대표) 분양중 데이터 (SVG 내부 고정 좌표 설정)
+const REPRESENTATIVE_PROPERTIES: Property[] = [
+  {
+    id: '1',
+    title: '오송 바이오폴리스',
+    province: '충청북도',
+    city: '청주시',
+    status: '분양중',
+    category: '산업단지',
+    address: '충청북도 청주시 흥덕구 오송읍',
+    image: 'https://images.unsplash.com/photo-1541888946425-d0fbb186a5b3?auto=format&fit=crop&w=600&q=80',
+    svgX: 255,
+    svgY: 240,
+    areaSize: '1,200,000m²',
+    price: '평당 약 150만원~',
+    description: '바이오 헬스케어 및 첨단 소재 기업 중심 입지, KTX 오송역 인접.'
+  },
+  {
+    id: '2',
+    title: '경산 4 일반산단',
+    province: '경상북도',
+    city: '경산시',
+    status: '분양중',
+    category: '산업단지',
+    address: '경상북도 경산시 진량읍',
+    image: 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?auto=format&fit=crop&w=600&q=80',
+    lat: 48,
+    svgX: 350,
+    svgY: 270,
+    areaSize: '850,000m²',
+    price: '평당 약 120만원~',
+    description: '자동차 부품 및 금속 가공 특화 산업단지, 경부고속도로 인접.'
+  },
+  {
+    id: '3',
+    title: '평택 고덕 첨단단지',
+    province: '경기도',
+    city: '평택시',
+    status: '분양중',
+    category: '복합단지',
+    address: '경기도 평택시 고덕면',
+    image: 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=600&q=80',
+    svgX: 190,
+    svgY: 170,
+    areaSize: '2,100,000m²',
+    price: '평당 약 280만원~',
+    description: '삼성전자 평택캠퍼스 인접, 첨단 반도체 클러스터 공급 단지.'
+  },
+  {
+    id: '4',
+    title: '원주 수소산단',
+    province: '강원특별자치도',
+    city: '원주시',
+    status: '분양중',
+    category: '산업단지',
+    address: '강원특별자치도 원주시 문막읍',
+    image: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=600&q=80',
+    svgX: 285,
+    svgY: 135,
+    areaSize: '620,000m²',
+    price: '평당 약 95만원~',
+    description: '수도권 접근성 우수, 친환경 에너지 특화 산업단지.'
+  },
+  {
+    id: '5',
+    title: '창원 국가산단',
+    province: '경상남도',
+    city: '창원시',
+    status: '분양중',
+    category: '국가산업단지',
+    address: '경상남도 창원시 성산구',
+    image: 'https://images.unsplash.com/photo-1541888946425-d0fbb186a5b3?auto=format&fit=crop&w=600&q=80',
+    svgX: 285,
+    svgY: 415,
+    areaSize: '1,500,000m²',
+    price: '평당 약 210만원~',
+    description: '기계·방산 클러스터 중심지, 최첨단 스마트 그린산단.'
+  },
+  {
+    id: '6',
+    title: '전주 탄소산단',
+    province: '전라북도',
+    city: '전주시',
+    status: '분양중',
+    category: '국가산업단지',
+    address: '전라북도 전주시 덕진구',
+    image: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=600&q=80',
+    svgX: 185,
+    svgY: 345,
+    areaSize: '650,000m²',
+    price: '평당 약 110만원~',
+    description: '대한민국 탄소산업 허브 메카 산업단지.'
+  },
+  {
+    id: '7',
+    title: '여수 율촌 물류단지',
+    province: '전라남도',
+    city: '여수시',
+    status: '분양중',
+    category: '물류산업단지',
+    address: '전라남도 여수시 율촌면',
+    image: 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=600&q=80',
+    svgX: 165,
+    svgY: 445,
+    areaSize: '980,000m²',
+    price: '평당 약 88만원~',
+    description: '광양항 인접 항만물류 및 석유화학 연계 단지.'
   }
-
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return String(value)
-  }
-
-  return null
-}
-
-function getRegionCode(properties: Record<string, any>): string | null {
-  const candidates = [
-    'SIG_CD',
-    'sig_cd',
-    'SGG_CD',
-    'sgg_cd',
-    'ADM_CD',
-    'adm_cd',
-    'CODE',
-    'code',
-    'A1',
-    'NF_ID',
-  ]
-
-  for (const key of candidates) {
-    const value = toText(properties?.[key])
-
-    if (value) {
-      return value
-    }
-  }
-
-  for (const [key, rawValue] of Object.entries(properties ?? {})) {
-    const lowerKey = key.toLowerCase()
-
-    if (lowerKey.includes('cd') || lowerKey.includes('code')) {
-      const value = toText(rawValue)
-
-      if (value) {
-        return value
-      }
-    }
-  }
-
-  return null
-}
-
-function getRegionName(properties: Record<string, any>): string | null {
-  const candidates = [
-    'SIG_KOR_NM',
-    'sig_kor_nm',
-    'SIG_NM',
-    'sig_nm',
-    'SGG_NM',
-    'sgg_nm',
-    'ADM_NM',
-    'adm_nm',
-    'NAME',
-    'name',
-    'KOR_NM',
-    'kor_nm',
-    'A2',
-    'ADZONE_NM',
-  ]
-
-  for (const key of candidates) {
-    const value = toText(properties?.[key])
-
-    if (value) {
-      return value.replace(/\s+/g, '')
-    }
-  }
-
-  const fallback = Object.values(properties ?? {}).find(
-    (value) =>
-      typeof value === 'string' &&
-      /[가-힣]/.test(value) &&
-      value.trim().length >= 2
-  )
-
-  return typeof fallback === 'string'
-    ? fallback.trim().replace(/\s+/g, '')
-    : null
-}
-
-function FitKoreaBounds({
-  geo,
-}: {
-  geo: FeatureCollection
-}) {
-  const map = useMap()
-
-  useEffect(() => {
-    const layer = L.geoJSON(geo as any)
-    const bounds = layer.getBounds()
-
-    if (!bounds.isValid()) {
-      return
-    }
-
-    map.fitBounds(bounds, {
-      padding: [24, 24],
-      animate: false,
-    })
-
-    map.setMaxBounds(bounds.pad(0.08))
-  }, [geo, map])
-
-  return null
-}
-
-function MoveToRegion({
-  selectedFeature,
-}: {
-  selectedFeature: any | null
-}) {
-  const map = useMap()
-
-  useEffect(() => {
-    if (!selectedFeature) {
-      return
-    }
-
-    const layer = L.geoJSON(selectedFeature)
-    const bounds = layer.getBounds()
-
-    if (!bounds.isValid()) {
-      return
-    }
-
-    map.fitBounds(bounds, {
-      padding: [40, 40],
-      maxZoom: 10,
-      animate: true,
-    })
-  }, [selectedFeature, map])
-
-  return null
-}
+];
 
 export default function MapView() {
-  const router = useRouter()
+  const [zoomLevel, setZoomLevel] = useState<number>(1);
+  const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const [geo, setGeo] = useState<FeatureCollection | null>(null)
-  const [selectedCode, setSelectedCode] = useState<string | null>(null)
-  const [selectedFeature, setSelectedFeature] = useState<any | null>(null)
-
-  const [searchText, setSearchText] = useState('')
-  const [showResults, setShowResults] = useState(false)
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
-
-  useEffect(() => {
-    const loadGeo = async () => {
-      try {
-        const response = await fetch(GEO_URL)
-
-        if (!response.ok) {
-          throw new Error(
-            `지도 데이터 요청 실패: ${response.status}`
-          )
-        }
-
-        const data = (await response.json()) as FeatureCollection
-
-        if (data.type !== 'FeatureCollection') {
-          throw new Error(
-            '지도 데이터 형식이 올바르지 않습니다.'
-          )
-        }
-
-        setGeo(data)
-      } catch (error) {
-        console.error('[GEO LOAD ERROR]', error)
-
-        setErrorMessage(
-          error instanceof Error
-            ? error.message
-            : '지도 데이터를 불러오지 못했습니다.'
-        )
-      }
-    }
-
-    loadGeo()
-  }, [])
-
-  const regions = useMemo<RegionOption[]>(() => {
-    if (!geo) {
-      return []
-    }
-
-    const result = geo.features
-      .map((feature: any) => {
-        const properties = feature?.properties ?? {}
-        const code = getRegionCode(properties)
-        const name = getRegionName(properties)
-
-        if (!code || !name) {
-          return null
-        }
-
-        return {
-          code,
-          name,
-          feature,
-        }
-      })
-      .filter(
-        (item): item is RegionOption =>
-          item !== null
-      )
-
-    const unique = new Map<string, RegionOption>()
-
-  for (const item of result) {
-    const normalizedName = item.name.replace(/\s+/g, '')
-
-    if (!unique.has(normalizedName)) {
-    unique.set(normalizedName, item)
-  }
-}
-
-    return Array.from(unique.values()).sort((a, b) =>
-      a.name.localeCompare(b.name, 'ko')
-    )
-  }, [geo])
-
-  const filteredRegions = useMemo(() => {
-    const keyword = searchText.trim().replace(/\s+/g, '')
-
-    if (!keyword) {
-      return []
-    }
-
-    return regions
-      .filter((region) =>
-        region.name.includes(keyword)
-      )
-      .slice(0, 12)
-  }, [regions, searchText])
-
-  const openRegionListings = (
-    region: Pick<RegionOption, 'code' | 'name'>
-  ) => {
-    setSelectedCode(region.code)
-
-    const url =
-      `/announcements/${encodeURIComponent(region.code)}` +
-      `?regionName=${encodeURIComponent(region.name)}`
-
-    router.push(url)
-  }
-
-  const handleMapRegionSelect = (
-    region: SelectedRegion
-  ) => {
-    if (!region.code) {
-      return
-    }
-
-    setSelectedCode(region.code)
-
-    openRegionListings({
-      code: region.code,
-      name: region.name,
-    })
-  }
-
-  const handleSearchRegionSelect = (
-    region: RegionOption
-  ) => {
-    setSearchText(region.name)
-    setShowResults(false)
-    setSelectedCode(region.code)
-    setSelectedFeature(region.feature)
-
-    // 검색 결과를 눌렀을 때 잠깐 해당 지역으로 확대
-    // 곧바로 목록으로 이동하려면 아래 setTimeout을 제거하고
-    // openRegionListings(region)만 남겨도 됨
-    setTimeout(() => {
-      openRegionListings(region)
-    }, 350)
-  }
-
-  if (errorMessage) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-neutral-100 px-6">
-        <div className="rounded-xl bg-white p-6 shadow">
-          <h1 className="text-xl font-bold">
-            지도를 불러오지 못했습니다.
-          </h1>
-
-          <p className="mt-2 text-sm text-gray-600">
-            {errorMessage}
-          </p>
-        </div>
-      </main>
-    )
-  }
-
-  if (!geo) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-neutral-100 text-gray-700">
-        대한민국 지도를 불러오는 중...
-      </div>
-    )
-  }
+  const handleZoomIn = () => setZoomLevel(prev => Math.min(prev + 0.3, 2.5));
+  const handleZoomOut = () => setZoomLevel(prev => Math.max(prev - 0.3, 0.7));
 
   return (
-    <div className="relative h-screen w-screen overflow-hidden bg-neutral-100">
-      <div className="absolute left-1/2 top-5 z-[1000] w-[calc(100%-32px)] max-w-md -translate-x-1/2">
-        <div className="rounded-xl bg-white shadow-lg">
-          <div className="flex items-center px-4">
-            <span className="mr-3 text-gray-400">
-              🔍
-            </span>
-
-            <input
-              value={searchText}
-              onChange={(event) => {
-                setSearchText(event.target.value)
-                setShowResults(true)
-              }}
-              onFocus={() => {
-                setShowResults(true)
-              }}
-              onKeyDown={(event) => {
-                if (
-                  event.key === 'Enter' &&
-                  filteredRegions.length > 0
-                ) {
-                  handleSearchRegionSelect(
-                    filteredRegions[0]
-                  )
-                }
-
-                if (event.key === 'Escape') {
-                  setShowResults(false)
-                }
-              }}
-              placeholder="시·군·구 검색 예: 음성군"
-              className="h-14 w-full bg-transparent text-base text-gray-900 outline-none placeholder:text-gray-400"
-            />
-
-            {searchText && (
-              <button
-                type="button"
-                onClick={() => {
-                  setSearchText('')
-                  setShowResults(false)
-                }}
-                className="ml-2 text-gray-400 hover:text-gray-700"
-                aria-label="검색어 지우기"
-              >
-                ✕
-              </button>
-            )}
-          </div>
-
-          {showResults && searchText.trim() && (
-            <div className="max-h-80 overflow-y-auto border-t border-gray-100">
-              {filteredRegions.length === 0 ? (
-                <p className="px-4 py-4 text-sm text-gray-500">
-                  일치하는 지역이 없습니다.
-                </p>
-              ) : (
-                filteredRegions.map((region) => (
-                  <button
-                    key={region.code}
-                    type="button"
-                    onClick={() =>
-                      handleSearchRegionSelect(region)
-                    }
-                    className="flex w-full items-center justify-between px-4 py-3 text-left hover:bg-gray-50"
-                  >
-                    <span className="font-medium text-gray-900">
-                      {region.name}
-                    </span>
-
-                    <span className="text-xs text-gray-400">
-                      {region.code}
-                    </span>
-                  </button>
-                ))
-              )}
-            </div>
-          )}
+    <div className="relative w-full h-full bg-slate-100 flex items-center justify-center overflow-hidden">
+      
+      {/* 1. 상단 중앙 시·군·구 통합 검색 바 */}
+      <div className="absolute top-4 z-20 w-11/12 max-w-md">
+        <div className="relative flex items-center bg-white rounded-xl shadow-md border border-slate-200">
+          <Search className="w-5 h-5 text-slate-400 ml-3.5 flex-shrink-0" />
+          <input 
+            type="text" 
+            placeholder="시·군·구 검색 예: 음성군, 달성군"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full py-3 px-3 text-sm bg-transparent focus:outline-none text-slate-700"
+          />
         </div>
       </div>
 
-      <MapContainer
-        center={[36.3, 127.8]}
-        zoom={7}
-        minZoom={7}
-        maxZoom={13}
-        zoomControl={true}
-        scrollWheelZoom={true}
-        doubleClickZoom={true}
-        dragging={true}
-        worldCopyJump={false}
-        maxBoundsViscosity={1}
-        style={{
-          height: '100%',
-          width: '100%',
-          background: '#f5f5f5',
-        }}
+      {/* 2. 좌측 상단 Zoom 컨트롤러 */}
+      <div className="absolute top-4 left-4 z-20 flex flex-col bg-white rounded-lg border border-slate-200 shadow-md overflow-hidden">
+        <button 
+          onClick={handleZoomIn}
+          className="p-2.5 hover:bg-slate-50 border-b border-slate-200 text-slate-700 transition"
+          title="확대"
+        >
+          <Plus className="w-4 h-4" />
+        </button>
+        <button 
+          onClick={handleZoomOut}
+          className="p-2.5 hover:bg-slate-50 text-slate-700 transition"
+          title="축소"
+        >
+          <Minus className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* 3. 지도 및 핀 통합 캔버스 (줌인/줌아웃 시 같이 축적 변환) */}
+      <div 
+        className="w-full h-full flex items-center justify-center transition-transform duration-200 ease-out"
+        style={{ transform: `scale(${zoomLevel})` }}
       >
-        <FitKoreaBounds geo={geo} />
+        <svg 
+          viewBox="0 0 500 650" 
+          className="w-full h-full max-h-[620px] select-none drop-shadow-sm"
+        >
+          {/* 도(道) 단위 빨간색 테두리 경계선 전용 그룹 */}
+          <g stroke="#EF4444" strokeWidth="2" strokeLinejoin="round" fill="#F8FAFC">
+            {/* 경기도 & 서울 & 인천 영역 */}
+            <path d="M150,110 L220,100 L250,140 L230,200 L170,220 L130,170 Z" className="hover:fill-red-50/60 transition cursor-pointer" />
+            
+            {/* 강원특별자치도 영역 */}
+            <path d="M220,100 L350,80 L380,170 L250,200 L250,140 Z" className="hover:fill-red-50/60 transition cursor-pointer" />
+            
+            {/* 충청북도 영역 */}
+            <path d="M230,200 L300,210 L280,290 L210,270 L210,220 Z" className="hover:fill-red-50/60 transition cursor-pointer" />
+            
+            {/* 충청남도 영역 */}
+            <path d="M130,170 L210,220 L210,270 L150,320 L90,250 Z" className="hover:fill-red-50/60 transition cursor-pointer" />
+            
+            {/* 경상북도 영역 */}
+            <path d="M300,210 L380,170 L420,330 L340,380 L280,290 Z" className="hover:fill-red-50/60 transition cursor-pointer" />
+            
+            {/* 경상남도 영역 */}
+            <path d="M280,290 L340,380 L320,460 L230,430 L250,360 Z" className="hover:fill-red-50/60 transition cursor-pointer" />
+            
+            {/* 전라북도 영역 */}
+            <path d="M150,320 L210,270 L250,360 L180,410 L120,360 Z" className="hover:fill-red-50/60 transition cursor-pointer" />
+            
+            {/* 전라남도 영역 */}
+            <path d="M120,360 L180,410 L230,430 L200,520 L90,490 Z" className="hover:fill-red-50/60 transition cursor-pointer" />
+            
+            {/* 제주특별자치도 영역 */}
+            <path d="M100,560 L160,560 L150,600 L90,590 Z" className="hover:fill-red-50/60 transition cursor-pointer" />
+          </g>
 
-        <MoveToRegion
-          selectedFeature={selectedFeature}
-        />
+          {/* SVG 내부 직삽입 도별 대표 1건 아이콘 카드 (줌인/줌아웃 시 고정 연동) */}
+          {REPRESENTATIVE_PROPERTIES.map((prop) => (
+            <foreignObject 
+              key={prop.id}
+              x={prop.svgX - 55} 
+              y={prop.svgY - 45} 
+              width="110" 
+              height="75"
+              className="overflow-visible"
+            >
+              <div 
+                onClick={() => setSelectedProperty(prop)}
+                className="cursor-pointer group flex flex-col items-center"
+              >
+                {/* 도 영역에 어울리는 넉넉하고 시원한 크기의 이미지 카드 */}
+                <div className="w-[105px] bg-white border border-slate-300 rounded-lg shadow-lg overflow-hidden transition transform group-hover:scale-105 group-hover:border-red-500">
+                  <div className="relative h-11 w-full bg-slate-200">
+                    <img 
+                      src={prop.image} 
+                      alt={prop.title} 
+                      className="w-full h-full object-cover" 
+                    />
+                    <span className="absolute top-1 left-1 bg-cyan-500 text-white font-bold text-[8px] px-1 py-0.2 rounded shadow-sm">
+                      분양중
+                    </span>
+                  </div>
+                  <div className="p-1 text-center bg-white">
+                    <span className="block font-extrabold text-[10px] text-slate-800 truncate leading-tight">
+                      {prop.title}
+                    </span>
+                  </div>
+                </div>
+                {/* 하단 연결 빨간 핀 포인트 */}
+                <div className="w-2.5 h-2.5 bg-red-600 rounded-full border-2 border-white shadow -mt-0.5 animate-pulse" />
+              </div>
+            </foreignObject>
+          ))}
+        </svg>
+      </div>
 
-        <KoreaGeoLayer
-          geo={geo}
-          selectedCode={selectedCode}
-          onSelect={handleMapRegionSelect}
-          autoFitOnSelect={false}
-        />
-      </MapContainer>
+      {/* 4. 대표 공고 상세 클릭 팝업 모달 */}
+      {selectedProperty && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden z-10 animate-in zoom-in-95 duration-150">
+            <div className="relative h-44 bg-slate-100">
+              <img 
+                src={selectedProperty.image} 
+                alt={selectedProperty.title} 
+                className="w-full h-full object-cover"
+              />
+              <button 
+                onClick={() => setSelectedProperty(null)}
+                className="absolute top-2.5 right-2.5 bg-black/50 text-white p-1 rounded-full hover:bg-black/80 transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-4 space-y-2">
+              <div>
+                <span className="text-[10px] font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded">
+                  {selectedProperty.province} 대표 단지
+                </span>
+                <h3 className="text-base font-extrabold text-slate-900 mt-1">{selectedProperty.title}</h3>
+                <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+                  <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                  {selectedProperty.address}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 bg-slate-50 p-2.5 rounded-lg border border-slate-100 text-xs">
+                <div>
+                  <span className="text-slate-400 block font-semibold text-[10px]">공급 면적</span>
+                  <span className="font-bold text-slate-700">{selectedProperty.areaSize || '상담 문의'}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block font-semibold text-[10px]">분양가 단가</span>
+                  <span className="font-bold text-red-600">{selectedProperty.price || '상담 문의'}</span>
+                </div>
+              </div>
+
+              <p className="text-xs text-slate-600 leading-relaxed bg-blue-50/40 p-2.5 rounded-lg border border-blue-100 text-[11px]">
+                {selectedProperty.description}
+              </p>
+            </div>
+
+            <div className="p-3 bg-slate-50 border-t border-slate-200 flex gap-2">
+              <a 
+                href="tel:1588-0000" 
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded-lg text-xs flex items-center justify-center gap-1 shadow transition"
+              >
+                <PhoneCall className="w-3.5 h-3.5" /> 상담 연결
+              </a>
+              <button 
+                onClick={() => setSelectedProperty(null)}
+                className="px-3 py-2 border border-slate-300 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-100 transition"
+              >
+                닫기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
-  )
+  );
 }
