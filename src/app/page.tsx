@@ -6,6 +6,7 @@ import {
   MapPin, Building, Filter, CheckCircle2, Clock, AlertCircle, RefreshCw, Navigation,
   FileText, Users, Award, ShieldCheck
 } from 'lucide-react';
+import MapView from '@/components/MapView';
 
 interface Property {
   id: string;
@@ -71,27 +72,23 @@ const PROPERTIES: Property[] = [
   }
 ];
 
-const PROVINCES = ['전체', '서울특별시', '경기도', '인천광역시', '강원특별자치도', '충청북도', '충청남도', '경상북도', '경상남도', '전라북도', '전라남도', '제주특별자치도'];
-
 export default function BunyangPage() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [activeSubMenu, setActiveSubMenu] = useState<string | null>('company');
-  const [selectedProvince, setSelectedProvince] = useState<string>('전체');
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans">
       
-      {/* 1. 상단 헤더 */}
+      {/* 상단 헤더 (브랜드명: 분양HUB) */}
       <header className="sticky top-0 z-30 bg-white border-b border-slate-200 px-4 lg:px-6 py-2.5 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-3">
           <button 
             onClick={() => setIsDrawerOpen(true)}
-            className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-700 transition flex items-center gap-1 font-bold text-xs"
+            className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-700 transition flex items-center gap-1.5 font-bold text-xs"
           >
             <Menu className="w-5 h-5 text-red-600" />
-            <span className="hidden sm:inline">메뉴</span>
+            <span>메뉴</span>
           </button>
           <div className="flex items-center gap-1.5">
             <Building className="w-5 h-5 text-red-600" />
@@ -102,27 +99,21 @@ export default function BunyangPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <button 
-            onClick={() => setIsSearchOpen(true)}
-            className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm transition"
-          >
-            <Search className="w-3.5 h-3.5" />
-            <span>조건 검색</span>
-          </button>
-          <a href="tel:1588-0000" className="p-1.5 text-slate-600 hover:bg-slate-100 rounded-lg transition">
-            <PhoneCall className="w-4 h-4" />
+          <a href="tel:1588-0000" className="flex items-center gap-1 bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm hover:bg-red-700 transition">
+            <PhoneCall className="w-3.5 h-3.5" />
+            <span>상담 문의</span>
           </a>
         </div>
       </header>
 
-      {/* 2. 회사소개 전용 사이드바 */}
+      {/* 회사소개 전용 메뉴 슬라이드 */}
       {isDrawerOpen && (
         <div className="fixed inset-0 z-50 flex">
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsDrawerOpen(false)} />
           <div className="relative w-72 bg-white h-full shadow-2xl flex flex-col z-10">
             <div className="p-3.5 border-b border-slate-100 flex items-center justify-between bg-slate-900 text-white">
               <span className="font-bold text-sm flex items-center gap-1.5">
-                <Building className="w-4 h-4 text-red-500" /> 메뉴
+                <Building className="w-4 h-4 text-red-500" /> 전체 메뉴
               </span>
               <button onClick={() => setIsDrawerOpen(false)} className="p-1 text-slate-400 hover:text-white">
                 <X className="w-5 h-5" />
@@ -142,128 +133,64 @@ export default function BunyangPage() {
                 </button>
                 {activeSubMenu === 'company' && (
                   <div className="bg-white py-1.5 px-5 text-xs space-y-1 text-slate-600 border-t border-red-100">
-                    <a href="#ceo" onClick={() => setIsDrawerOpen(false)} className="flex items-center gap-2 py-1.5 px-2 rounded hover:bg-red-50 hover:text-red-600 transition">
+                    <a href="#ceo" onClick={() => setIsDrawerOpen(false)} className="flex items-center gap-2 py-1.5 px-2 rounded hover:bg-red-50 hover:text-red-600 transition font-medium">
                       <Users className="w-3 h-3 text-red-500" /> CEO 인사말
                     </a>
-                    <a href="#vision" onClick={() => setIsDrawerOpen(false)} className="flex items-center gap-2 py-1.5 px-2 rounded hover:bg-red-50 hover:text-red-600 transition">
+                    <a href="#vision" onClick={() => setIsDrawerOpen(false)} className="flex items-center gap-2 py-1.5 px-2 rounded hover:bg-red-50 hover:text-red-600 transition font-medium">
                       <Award className="w-3 h-3 text-red-500" /> Motto & Vision
                     </a>
-                    <a href="#organization" onClick={() => setIsDrawerOpen(false)} className="flex items-center gap-2 py-1.5 px-2 rounded hover:bg-red-50 hover:text-red-600 transition">
+                    <a href="#organization" onClick={() => setIsDrawerOpen(false)} className="flex items-center gap-2 py-1.5 px-2 rounded hover:bg-red-50 hover:text-red-600 transition font-medium">
                       <ShieldCheck className="w-3 h-3 text-red-500" /> 조직도 및 시스템
                     </a>
-                    <a href="#about" onClick={() => setIsDrawerOpen(false)} className="flex items-center gap-2 py-1.5 px-2 rounded hover:bg-red-50 hover:text-red-600 transition">
+                    <a href="#about" onClick={() => setIsDrawerOpen(false)} className="flex items-center gap-2 py-1.5 px-2 rounded hover:bg-red-50 hover:text-red-600 transition font-medium">
                       <Building className="w-3 h-3 text-red-500" /> 회사 소개
                     </a>
                   </div>
                 )}
               </div>
             </div>
+
+            <div className="p-3 bg-slate-50 border-t border-slate-200 text-[11px] text-slate-400 text-center">
+              Copyright © BUNYANG HUB. All Rights Reserved.
+            </div>
           </div>
         </div>
       )}
 
-      {/* 3. 메인 지도 메인 영역 */}
-      <main className="flex-1 flex flex-col lg:flex-row max-w-7xl w-full mx-auto p-3 gap-4">
+      {/* 원래 제작해두신 지도 컴포넌트 메인 렌더링 영역 */}
+      <main className="flex-1 relative w-full h-[calc(100vh-53px)] overflow-hidden">
         
-        {/* 지도 영역 */}
-        <section className="flex-1 bg-slate-200 border border-slate-300 rounded-xl p-3 relative min-h-[550px] flex flex-col">
-          
-          {/* 지도 상단 필터/컨트롤 */}
-          <div className="flex items-center justify-between mb-2 bg-white/90 backdrop-blur-md p-2 rounded-lg border border-slate-200 shadow-sm z-10 text-xs">
-            <span className="font-bold text-slate-800 flex items-center gap-1.5">
-              <MapPin className="w-4 h-4 text-red-600" /> 전국 분양 지도
-            </span>
+        {/* 기존 지도 컴포넌트 불러오기 */}
+        <MapView />
 
-            <div className="flex gap-1 overflow-x-auto max-w-md py-0.5">
-              {PROVINCES.slice(0, 6).map(prov => (
-                <button
-                  key={prov}
-                  onClick={() => setSelectedProvince(prov)}
-                  className={`px-2 py-0.5 rounded text-[11px] font-semibold transition ${
-                    selectedProvince === prov ? 'bg-red-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
-                >
-                  {prov}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* SVG 지도 베이스 및 축소된 카드 마커 */}
-          <div className="relative flex-1 w-full h-full flex items-center justify-center overflow-hidden rounded-lg bg-slate-100">
-            
-            {/* 원래 사용하시던 시군구 경계 SVG 지도 유지 */}
-            <svg viewBox="0 0 500 700" className="w-full h-full max-h-[580px] drop-shadow-sm select-none">
-              <g stroke="#EF4444" strokeWidth="1.5" strokeLinejoin="round" fill="#F8FAFC">
-                <path d="M170,120 L210,110 L250,140 L230,200 L180,220 L140,180 Z" className="hover:fill-red-100/70 transition cursor-pointer" />
-                <path d="M210,110 L340,90 L380,180 L250,210 L250,140 Z" className="hover:fill-red-100/70 transition cursor-pointer" />
-                <path d="M230,200 L300,210 L280,300 L210,280 L210,230 Z" className="hover:fill-red-100/70 transition cursor-pointer" />
-                <path d="M140,180 L210,230 L210,280 L150,330 L100,260 Z" className="hover:fill-red-100/70 transition cursor-pointer" />
-                <path d="M300,210 L380,180 L420,340 L340,390 L280,300 Z" className="hover:fill-red-100/70 transition cursor-pointer" />
-                <path d="M280,300 L340,390 L320,460 L230,440 L250,370 Z" className="hover:fill-red-100/70 transition cursor-pointer" />
-                <path d="M150,330 L210,280 L250,370 L180,420 L130,370 Z" className="hover:fill-red-100/70 transition cursor-pointer" />
-                <path d="M130,370 L180,420 L230,440 L200,530 L100,500 Z" className="hover:fill-red-100/70 transition cursor-pointer" />
-                <path d="M110,580 L170,580 L160,620 L100,610 Z" className="hover:fill-red-100/70 transition cursor-pointer" />
-              </g>
-            </svg>
-
-            {/* 축소된 미니 이미지 마커 아이콘 카드 (w-20~24 크기) */}
-            {PROPERTIES.map((p) => (
-              <div 
-                key={p.id}
-                style={{ top: `${p.lat}%`, left: `${p.lng}%` }}
-                className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer z-20 group"
-                onClick={() => setSelectedProperty(p)}
-              >
-                <div className="flex flex-col items-center">
-                  <div className="bg-white border border-slate-300 shadow-md rounded-md overflow-hidden w-20 sm:w-24 transition transform group-hover:scale-110 group-hover:border-red-500">
-                    <div className="relative h-10 w-full bg-slate-100">
-                      <img src={p.image} alt={p.title} className="w-full h-full object-cover" />
-                      <span className="absolute top-0.5 left-0.5 bg-cyan-500 text-white font-bold text-[8px] px-1 py-0.2 rounded">
-                        분양중
-                      </span>
-                    </div>
-                    <div className="p-1 text-center bg-white">
-                      <span className="block font-bold text-[10px] text-slate-800 truncate leading-tight">
-                        {p.title}
-                      </span>
-                    </div>
+        {/* 지도 위에 작게 떠있는 소형 아이콘 카드 마커들 */}
+        <div className="absolute inset-0 pointer-events-none z-20">
+          {PROPERTIES.map((p) => (
+            <div 
+              key={p.id}
+              style={{ top: `${p.lat}%`, left: `${p.lng}%` }}
+              className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer pointer-events-auto group"
+              onClick={() => setSelectedProperty(p)}
+            >
+              <div className="flex flex-col items-center">
+                <div className="bg-white border border-slate-300 shadow-md rounded-md overflow-hidden w-20 sm:w-24 transition transform group-hover:scale-110 group-hover:border-red-500">
+                  <div className="relative h-9 w-full bg-slate-100">
+                    <img src={p.image} alt={p.title} className="w-full h-full object-cover" />
+                    <span className="absolute top-0.5 left-0.5 bg-cyan-500 text-white font-bold text-[7px] px-1 py-0.2 rounded">
+                      분양중
+                    </span>
                   </div>
-                  {/* 소형 핀 포인트 */}
-                  <div className="w-2 h-2 bg-red-600 rounded-full border border-white shadow -mt-0.5" />
+                  <div className="p-1 text-center bg-white">
+                    <span className="block font-bold text-[9px] text-slate-800 truncate leading-tight">
+                      {p.title}
+                    </span>
+                  </div>
                 </div>
+                <div className="w-2 h-2 bg-red-600 rounded-full border border-white shadow -mt-0.5" />
               </div>
-            ))}
-
-          </div>
-        </section>
-
-        {/* 우측 간단 리스트 */}
-        <section className="w-full lg:w-80 flex flex-col gap-3">
-          <h2 className="font-bold text-slate-800 text-sm flex items-center justify-between">
-            <span>추천 매물 목록</span>
-            <span className="text-xs text-slate-400 font-normal">{PROPERTIES.length}건</span>
-          </h2>
-
-          <div className="space-y-2 overflow-y-auto max-h-[550px]">
-            {PROPERTIES.map((item) => (
-              <div 
-                key={item.id}
-                onClick={() => setSelectedProperty(item)}
-                className="bg-white rounded-lg border border-slate-200 p-2.5 shadow-sm hover:border-blue-500 transition flex gap-3 cursor-pointer items-center"
-              >
-                <img src={item.image} alt={item.title} className="w-16 h-12 object-cover rounded bg-slate-100" />
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-xs text-slate-900 truncate">{item.title}</h3>
-                  <p className="text-[10px] text-slate-500 truncate mt-0.5">{item.address}</p>
-                  <span className="inline-block text-[9px] text-blue-600 font-semibold mt-1 bg-blue-50 px-1.5 py-0.5 rounded">
-                    {item.category}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
+            </div>
+          ))}
+        </div>
 
       </main>
 
