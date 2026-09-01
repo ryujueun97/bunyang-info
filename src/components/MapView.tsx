@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Search, Plus, Minus, MapPin, X, PhoneCall } from 'lucide-react';
 import KoreaGeoLayer from './KoreaGeoLayer';
 
@@ -20,7 +20,6 @@ interface Property {
   description?: string;
 }
 
-// 각 도별 첫 번째 대표 분양 공고
 const REPRESENTATIVE_PROPERTIES: Property[] = [
   {
     id: '1',
@@ -133,15 +132,7 @@ export default function MapView() {
   const [zoomLevel, setZoomLevel] = useState<number>(1);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [geoData, setGeoData] = useState<any>(null);
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetch('/korea.json')
-      .then(res => res.json())
-      .then(data => setGeoData(data))
-      .catch(() => setGeoData({ type: 'FeatureCollection', features: [] }));
-  }, []);
 
   const handleZoomIn = () => setZoomLevel(prev => Math.min(prev + 0.25, 2.5));
   const handleZoomOut = () => setZoomLevel(prev => Math.max(prev - 0.25, 0.75));
@@ -183,17 +174,16 @@ export default function MapView() {
         </button>
       </div>
 
-      {/* 지도 & 핀 컨테이너 (줌/이동 시 완벽 고정) */}
+      {/* 지도 및 핀 오버레이 컨테이너 */}
       <div 
         className="w-full h-full flex items-center justify-center transition-transform duration-200 ease-out"
         style={{ transform: `scale(${zoomLevel})` }}
       >
         <div className="relative w-full h-full max-h-[650px] flex items-center justify-center overflow-hidden">
           
-          {/* KoreaGeoLayer 렌더링 (필수 props 전달) */}
+          {/* KoreaGeoLayer 본체 */}
           <div className="w-full h-full [&_path]:stroke-red-500/80 [&_path]:stroke-[0.8] [&_path]:fill-slate-50 hover:[&_path]:fill-red-50 transition">
             <GeoLayerComponent 
-              geo={geoData || { type: 'FeatureCollection', features: [] }}
               selectedCode={selectedCode}
               onSelect={(code: string | null) => setSelectedCode(code)}
             />
@@ -238,7 +228,7 @@ export default function MapView() {
         </div>
       </div>
 
-      {/* 팝업 모달 */}
+      {/* 상세 팝업 모달 */}
       {selectedProperty && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden z-10 animate-in zoom-in-95 duration-150">
