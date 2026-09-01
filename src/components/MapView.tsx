@@ -152,14 +152,15 @@ export default function MapView() {
   useEffect(() => {
     setIsMounted(true);
 
-    // 실제 존재하는 로컬 지점 파일 로드 ➔ 실패 시 안정적인 온라인 원본 fallback
-    fetch('/geo/kor_sig.geojson')
+    // 시·도 단위 파일(kor_sido_test_b.json) 직접 로드
+    fetch('/geo/kor_sido_test_b.json')
       .then((res) => {
-        if (!res.ok) throw new Error('Local file not found');
+        if (!res.ok) throw new Error('Failed to load local sido file');
         return res.json();
       })
       .then((data) => setGeoData(data))
       .catch(() => {
+        // 백업: 온라인 17개 광역시·도 경계선 데이터
         fetch('https://raw.githubusercontent.com/southkorea/southkorea-maps/master/kostat/2013/json/skorea_provinces_2013_geo.json')
           .then((res) => res.json())
           .then((data) => setGeoData(data))
@@ -210,7 +211,7 @@ export default function MapView() {
   return (
     <div className="relative w-full h-[calc(100vh-53px)] bg-[#e0f2fe] flex items-center justify-center overflow-hidden [&_.leaflet-control-attribution]:hidden">
       
-      {/* 1. 상단 시·도 검색 바 */}
+      {/* 1. 상단 지역 검색 바 */}
       <div className="absolute top-4 z-[2000] w-11/12 max-w-md">
         <div className="relative flex items-center bg-white rounded-xl shadow-md border border-slate-200">
           <Search className="w-5 h-5 text-slate-400 ml-3.5 flex-shrink-0" />
@@ -224,7 +225,7 @@ export default function MapView() {
         </div>
       </div>
 
-      {/* 2. 대한민국 지도 및 마커 */}
+      {/* 2. 대한민국 시·도 지도 및 마커 */}
       <div className="w-full h-full relative">
         <MapContainer
           center={[36.0, 127.8]}
