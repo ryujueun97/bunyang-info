@@ -139,6 +139,7 @@ export default function MapView() {
   return (
     <div className="relative w-full h-full bg-slate-100 flex items-center justify-center overflow-hidden">
       
+      {/* 검색 바 */}
       <div className="absolute top-4 z-20 w-11/12 max-w-md">
         <div className="relative flex items-center bg-white rounded-xl shadow-md border border-slate-200">
           <Search className="w-5 h-5 text-slate-400 ml-3.5 flex-shrink-0" />
@@ -152,6 +153,7 @@ export default function MapView() {
         </div>
       </div>
 
+      {/* 줌 버튼 */}
       <div className="absolute top-4 left-4 z-20 flex flex-col bg-white rounded-lg border border-slate-200 shadow-md overflow-hidden">
         <button 
           onClick={handleZoomIn}
@@ -169,30 +171,31 @@ export default function MapView() {
         </button>
       </div>
 
+      {/* 지도 및 오버레이 통합 컨테이너 */}
       <div 
         className="w-full h-full flex items-center justify-center transition-transform duration-200 ease-out"
         style={{ transform: `scale(${zoomLevel})` }}
       >
-        <div className="relative w-full h-full max-h-[650px] flex items-center justify-center">
+        <div className="relative w-full h-full max-h-[650px] flex items-center justify-center overflow-hidden">
           
-          <div className="w-full h-full [&_path]:stroke-red-400 [&_path]:stroke-[0.8] [&_path]:fill-slate-50 hover:[&_path]:fill-red-50 transition">
+          {/* 1. 지도 본체 */}
+          <div className="w-full h-full [&_path]:stroke-red-500 [&_path]:stroke-[0.8] [&_path]:fill-slate-50 hover:[&_path]:fill-red-50 transition">
             <KoreaGeoLayer />
           </div>
 
-          <svg className="absolute inset-0 w-full h-full pointer-events-none z-10" viewBox="0 0 500 650">
+          {/* 2. 지도 오버레이 좌표 카드 */}
+          <div className="absolute inset-0 w-full h-full pointer-events-none">
             {REPRESENTATIVE_PROPERTIES.map((prop) => (
-              <foreignObject 
+              <div 
                 key={prop.id}
-                x={prop.svgX - 55} 
-                y={prop.svgY - 45} 
-                width="110" 
-                height="75"
-                className="overflow-visible pointer-events-auto"
+                style={{ 
+                  left: `${(prop.svgX / 500) * 100}%`, 
+                  top: `${(prop.svgY / 650) * 100}%` 
+                }}
+                className="absolute transform -translate-x-1/2 -translate-y-1/2 pointer-events-auto cursor-pointer group"
+                onClick={() => setSelectedProperty(prop)}
               >
-                <div 
-                  onClick={() => setSelectedProperty(prop)}
-                  className="cursor-pointer group flex flex-col items-center"
-                >
+                <div className="flex flex-col items-center">
                   <div className="w-[105px] bg-white/95 backdrop-blur-sm border border-slate-300 rounded-lg shadow-md overflow-hidden transition transform group-hover:scale-105 group-hover:border-red-500">
                     <div className="relative h-11 w-full bg-slate-200">
                       <img 
@@ -210,14 +213,16 @@ export default function MapView() {
                       </span>
                     </div>
                   </div>
-                  <div className="w-2.5 h-2.5 bg-red-600 rounded-full border-2 border-white shadow -mt-0.5" />
+                  <div className="w-2.5 h-2.5 bg-red-600 rounded-full border-2 border-white shadow -mt-0.5 animate-pulse" />
                 </div>
-              </foreignObject>
+              </div>
             ))}
-          </svg>
+          </div>
+
         </div>
       </div>
 
+      {/* 팝업 모달 */}
       {selectedProperty && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden z-10 animate-in zoom-in-95 duration-150">
