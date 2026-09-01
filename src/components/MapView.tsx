@@ -20,6 +20,7 @@ interface Property {
   description?: string;
 }
 
+// 각 도별 첫 번째(대표) 분양 공고
 const REPRESENTATIVE_PROPERTIES: Property[] = [
   {
     id: '1',
@@ -30,8 +31,8 @@ const REPRESENTATIVE_PROPERTIES: Property[] = [
     category: '산업단지',
     address: '충청북도 청주시 흥덕구 오송읍',
     image: 'https://images.unsplash.com/photo-1541888946425-d0fbb186a5b3?auto=format&fit=crop&w=600&q=80',
-    svgX: 235,
-    svgY: 235,
+    svgX: 245,
+    svgY: 245,
     areaSize: '1,200,000m²',
     price: '평당 약 150만원~',
     description: '바이오 헬스케어 및 첨단 소재 기업 중심 입지, KTX 오송역 인접.'
@@ -45,8 +46,8 @@ const REPRESENTATIVE_PROPERTIES: Property[] = [
     category: '산업단지',
     address: '경상북도 경산시 진량읍',
     image: 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?auto=format&fit=crop&w=600&q=80',
-    svgX: 320,
-    svgY: 255,
+    svgX: 330,
+    svgY: 270,
     areaSize: '850,000m²',
     price: '평당 약 120만원~',
     description: '자동차 부품 및 금속 가공 특화 산업단지, 경부고속도로 인접.'
@@ -60,8 +61,8 @@ const REPRESENTATIVE_PROPERTIES: Property[] = [
     category: '복합단지',
     address: '경기도 평택시 고덕면',
     image: 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=600&q=80',
-    svgX: 180,
-    svgY: 150,
+    svgX: 190,
+    svgY: 160,
     areaSize: '2,100,000m²',
     price: '평당 약 280만원~',
     description: '삼성전자 평택캠퍼스 인접, 첨단 반도체 클러스터 공급 단지.'
@@ -75,8 +76,8 @@ const REPRESENTATIVE_PROPERTIES: Property[] = [
     category: '산업단지',
     address: '강원특별자치도 원주시 문막읍',
     image: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=600&q=80',
-    svgX: 275,
-    svgY: 125,
+    svgX: 285,
+    svgY: 135,
     areaSize: '620,000m²',
     price: '평당 약 95만원~',
     description: '수도권 접근성 우수, 친환경 에너지 특화 산업단지.'
@@ -90,8 +91,8 @@ const REPRESENTATIVE_PROPERTIES: Property[] = [
     category: '국가산업단지',
     address: '경상남도 창원시 성산구',
     image: 'https://images.unsplash.com/photo-1541888946425-d0fbb186a5b3?auto=format&fit=crop&w=600&q=80',
-    svgX: 275,
-    svgY: 375,
+    svgX: 285,
+    svgY: 390,
     areaSize: '1,500,000m²',
     price: '평당 약 210만원~',
     description: '기계·방산 클러스터 중심지, 최첨단 스마트 그린산단.'
@@ -105,8 +106,8 @@ const REPRESENTATIVE_PROPERTIES: Property[] = [
     category: '국가산업단지',
     address: '전라북도 전주시 덕진구',
     image: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=600&q=80',
-    svgX: 175,
-    svgY: 315,
+    svgX: 185,
+    svgY: 330,
     areaSize: '650,000m²',
     price: '평당 약 110만원~',
     description: '대한민국 탄소산업 허브 메카 산업단지.'
@@ -120,8 +121,8 @@ const REPRESENTATIVE_PROPERTIES: Property[] = [
     category: '물류산업단지',
     address: '전라남도 여수시 율촌면',
     image: 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=600&q=80',
-    svgX: 150,
-    svgY: 415,
+    svgX: 160,
+    svgY: 430,
     areaSize: '980,000m²',
     price: '평당 약 88만원~',
     description: '광양항 인접 항만물류 및 석유화학 연계 단지.'
@@ -171,19 +172,19 @@ export default function MapView() {
         </button>
       </div>
 
-      {/* 지도 및 오버레이 통합 컨테이너 */}
+      {/* 지도 & 핀 동기화 영역 */}
       <div 
         className="w-full h-full flex items-center justify-center transition-transform duration-200 ease-out"
         style={{ transform: `scale(${zoomLevel})` }}
       >
-        <div className="relative w-full h-full max-h-[650px] flex items-center justify-center overflow-hidden">
+        <div className="relative w-full h-full max-h-[650px] flex items-center justify-center">
           
-          {/* 1. 지도 본체 */}
-          <div className="w-full h-full [&_path]:stroke-red-500 [&_path]:stroke-[0.8] [&_path]:fill-slate-50 hover:[&_path]:fill-red-50 transition">
+          {/* 1. 원래 정밀 대한민국 지도 (KoreaGeoLayer) */}
+          <div className="w-full h-full [&_path]:stroke-red-500/80 [&_path]:stroke-[0.8] [&_path]:fill-slate-50 hover:[&_path]:fill-red-50 transition">
             <KoreaGeoLayer />
           </div>
 
-          {/* 2. 지도 오버레이 좌표 카드 */}
+          {/* 2. 지도 오버레이 카드 핀 */}
           <div className="absolute inset-0 w-full h-full pointer-events-none">
             {REPRESENTATIVE_PROPERTIES.map((prop) => (
               <div 
