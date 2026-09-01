@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Search, Plus, Minus, CheckCircle2, MapPin, X, PhoneCall } from 'lucide-react';
+import { Search, Plus, Minus, MapPin, X, PhoneCall } from 'lucide-react';
 
 interface Property {
   id: string;
@@ -12,14 +12,14 @@ interface Property {
   category: string;
   address: string;
   image: string;
-  svgX: number; // SVG 지도 내부 좌표 X
-  svgY: number; // SVG 지도 내부 좌표 Y
+  svgX: number;
+  svgY: number;
   areaSize?: string;
   price?: string;
   description?: string;
 }
 
-// 각 도별 첫 번째(대표) 분양중 데이터 (SVG 내부 고정 좌표 설정)
+// 각 도별 첫 번째(대표) 분양 공고 (도 경계 내부 중앙 위치 지정)
 const REPRESENTATIVE_PROPERTIES: Property[] = [
   {
     id: '1',
@@ -30,8 +30,8 @@ const REPRESENTATIVE_PROPERTIES: Property[] = [
     category: '산업단지',
     address: '충청북도 청주시 흥덕구 오송읍',
     image: 'https://images.unsplash.com/photo-1541888946425-d0fbb186a5b3?auto=format&fit=crop&w=600&q=80',
-    svgX: 255,
-    svgY: 240,
+    svgX: 235,
+    svgY: 235,
     areaSize: '1,200,000m²',
     price: '평당 약 150만원~',
     description: '바이오 헬스케어 및 첨단 소재 기업 중심 입지, KTX 오송역 인접.'
@@ -45,9 +45,8 @@ const REPRESENTATIVE_PROPERTIES: Property[] = [
     category: '산업단지',
     address: '경상북도 경산시 진량읍',
     image: 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?auto=format&fit=crop&w=600&q=80',
-    lat: 48,
-    svgX: 350,
-    svgY: 270,
+    svgX: 320,
+    svgY: 255,
     areaSize: '850,000m²',
     price: '평당 약 120만원~',
     description: '자동차 부품 및 금속 가공 특화 산업단지, 경부고속도로 인접.'
@@ -61,8 +60,8 @@ const REPRESENTATIVE_PROPERTIES: Property[] = [
     category: '복합단지',
     address: '경기도 평택시 고덕면',
     image: 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=600&q=80',
-    svgX: 190,
-    svgY: 170,
+    svgX: 180,
+    svgY: 150,
     areaSize: '2,100,000m²',
     price: '평당 약 280만원~',
     description: '삼성전자 평택캠퍼스 인접, 첨단 반도체 클러스터 공급 단지.'
@@ -76,8 +75,8 @@ const REPRESENTATIVE_PROPERTIES: Property[] = [
     category: '산업단지',
     address: '강원특별자치도 원주시 문막읍',
     image: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=600&q=80',
-    svgX: 285,
-    svgY: 135,
+    svgX: 275,
+    svgY: 125,
     areaSize: '620,000m²',
     price: '평당 약 95만원~',
     description: '수도권 접근성 우수, 친환경 에너지 특화 산업단지.'
@@ -91,8 +90,8 @@ const REPRESENTATIVE_PROPERTIES: Property[] = [
     category: '국가산업단지',
     address: '경상남도 창원시 성산구',
     image: 'https://images.unsplash.com/photo-1541888946425-d0fbb186a5b3?auto=format&fit=crop&w=600&q=80',
-    svgX: 285,
-    svgY: 415,
+    svgX: 275,
+    svgY: 375,
     areaSize: '1,500,000m²',
     price: '평당 약 210만원~',
     description: '기계·방산 클러스터 중심지, 최첨단 스마트 그린산단.'
@@ -106,8 +105,8 @@ const REPRESENTATIVE_PROPERTIES: Property[] = [
     category: '국가산업단지',
     address: '전라북도 전주시 덕진구',
     image: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=600&q=80',
-    svgX: 185,
-    svgY: 345,
+    svgX: 175,
+    svgY: 315,
     areaSize: '650,000m²',
     price: '평당 약 110만원~',
     description: '대한민국 탄소산업 허브 메카 산업단지.'
@@ -121,8 +120,8 @@ const REPRESENTATIVE_PROPERTIES: Property[] = [
     category: '물류산업단지',
     address: '전라남도 여수시 율촌면',
     image: 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=600&q=80',
-    svgX: 165,
-    svgY: 445,
+    svgX: 150,
+    svgY: 415,
     areaSize: '980,000m²',
     price: '평당 약 88만원~',
     description: '광양항 인접 항만물류 및 석유화학 연계 단지.'
@@ -134,13 +133,13 @@ export default function MapView() {
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const handleZoomIn = () => setZoomLevel(prev => Math.min(prev + 0.3, 2.5));
-  const handleZoomOut = () => setZoomLevel(prev => Math.max(prev - 0.3, 0.7));
+  const handleZoomIn = () => setZoomLevel(prev => Math.min(prev + 0.25, 2.2));
+  const handleZoomOut = () => setZoomLevel(prev => Math.max(prev - 0.25, 0.75));
 
   return (
     <div className="relative w-full h-full bg-slate-100 flex items-center justify-center overflow-hidden">
       
-      {/* 1. 상단 중앙 시·군·구 통합 검색 바 */}
+      {/* 시·군·구 검색창 */}
       <div className="absolute top-4 z-20 w-11/12 max-w-md">
         <div className="relative flex items-center bg-white rounded-xl shadow-md border border-slate-200">
           <Search className="w-5 h-5 text-slate-400 ml-3.5 flex-shrink-0" />
@@ -154,7 +153,7 @@ export default function MapView() {
         </div>
       </div>
 
-      {/* 2. 좌측 상단 Zoom 컨트롤러 */}
+      {/* 줌 버튼 */}
       <div className="absolute top-4 left-4 z-20 flex flex-col bg-white rounded-lg border border-slate-200 shadow-md overflow-hidden">
         <button 
           onClick={handleZoomIn}
@@ -172,46 +171,38 @@ export default function MapView() {
         </button>
       </div>
 
-      {/* 3. 지도 및 핀 통합 캔버스 (줌인/줌아웃 시 같이 축적 변환) */}
+      {/* 지도 및 카드 (확대/축소 및 이동 시 완벽 위치 고정) */}
       <div 
         className="w-full h-full flex items-center justify-center transition-transform duration-200 ease-out"
         style={{ transform: `scale(${zoomLevel})` }}
       >
         <svg 
-          viewBox="0 0 500 650" 
-          className="w-full h-full max-h-[620px] select-none drop-shadow-sm"
+          viewBox="0 0 450 600" 
+          className="w-full h-full max-h-[600px] select-none drop-shadow-sm"
         >
-          {/* 도(道) 단위 빨간색 테두리 경계선 전용 그룹 */}
+          {/* 오직 '도' 단위 붉은색 테두리 경계선만 노출 */}
           <g stroke="#EF4444" strokeWidth="2" strokeLinejoin="round" fill="#F8FAFC">
-            {/* 경기도 & 서울 & 인천 영역 */}
-            <path d="M150,110 L220,100 L250,140 L230,200 L170,220 L130,170 Z" className="hover:fill-red-50/60 transition cursor-pointer" />
-            
-            {/* 강원특별자치도 영역 */}
-            <path d="M220,100 L350,80 L380,170 L250,200 L250,140 Z" className="hover:fill-red-50/60 transition cursor-pointer" />
-            
-            {/* 충청북도 영역 */}
-            <path d="M230,200 L300,210 L280,290 L210,270 L210,220 Z" className="hover:fill-red-50/60 transition cursor-pointer" />
-            
-            {/* 충청남도 영역 */}
-            <path d="M130,170 L210,220 L210,270 L150,320 L90,250 Z" className="hover:fill-red-50/60 transition cursor-pointer" />
-            
-            {/* 경상북도 영역 */}
-            <path d="M300,210 L380,170 L420,330 L340,380 L280,290 Z" className="hover:fill-red-50/60 transition cursor-pointer" />
-            
-            {/* 경상남도 영역 */}
-            <path d="M280,290 L340,380 L320,460 L230,430 L250,360 Z" className="hover:fill-red-50/60 transition cursor-pointer" />
-            
-            {/* 전라북도 영역 */}
-            <path d="M150,320 L210,270 L250,360 L180,410 L120,360 Z" className="hover:fill-red-50/60 transition cursor-pointer" />
-            
-            {/* 전라남도 영역 */}
-            <path d="M120,360 L180,410 L230,430 L200,520 L90,490 Z" className="hover:fill-red-50/60 transition cursor-pointer" />
-            
-            {/* 제주특별자치도 영역 */}
-            <path d="M100,560 L160,560 L150,600 L90,590 Z" className="hover:fill-red-50/60 transition cursor-pointer" />
+            {/* 경기도 & 서울 & 인천 */}
+            <path d="M140,90 L210,80 L240,120 L220,180 L160,200 L120,150 Z" className="hover:fill-red-50 transition cursor-pointer" />
+            {/* 강원특별자치도 */}
+            <path d="M210,80 L340,60 L370,150 L240,180 L240,120 Z" className="hover:fill-red-50 transition cursor-pointer" />
+            {/* 충청북도 */}
+            <path d="M220,180 L290,190 L270,270 L200,250 L200,200 Z" className="hover:fill-red-50 transition cursor-pointer" />
+            {/* 충청남도 */}
+            <path d="M120,150 L200,200 L200,250 L140,300 L80,230 Z" className="hover:fill-red-50 transition cursor-pointer" />
+            {/* 경상북도 */}
+            <path d="M290,190 L370,150 L410,310 L330,360 L270,270 Z" className="hover:fill-red-50 transition cursor-pointer" />
+            {/* 경상남도 */}
+            <path d="M270,270 L330,360 L310,440 L220,410 L240,340 Z" className="hover:fill-red-50 transition cursor-pointer" />
+            {/* 전라북도 */}
+            <path d="M140,300 L200,250 L240,340 L170,390 L110,340 Z" className="hover:fill-red-50 transition cursor-pointer" />
+            {/* 전라남도 */}
+            <path d="M110,340 L170,390 L220,410 L190,500 L80,470 Z" className="hover:fill-red-50 transition cursor-pointer" />
+            {/* 제주특별자치도 */}
+            <path d="M90,540 L150,540 L140,580 L80,570 Z" className="hover:fill-red-50 transition cursor-pointer" />
           </g>
 
-          {/* SVG 내부 직삽입 도별 대표 1건 아이콘 카드 (줌인/줌아웃 시 고정 연동) */}
+          {/* 도 경계 중앙에 고정된 대표 카드 핀 */}
           {REPRESENTATIVE_PROPERTIES.map((prop) => (
             <foreignObject 
               key={prop.id}
@@ -225,8 +216,7 @@ export default function MapView() {
                 onClick={() => setSelectedProperty(prop)}
                 className="cursor-pointer group flex flex-col items-center"
               >
-                {/* 도 영역에 어울리는 넉넉하고 시원한 크기의 이미지 카드 */}
-                <div className="w-[105px] bg-white border border-slate-300 rounded-lg shadow-lg overflow-hidden transition transform group-hover:scale-105 group-hover:border-red-500">
+                <div className="w-[105px] bg-white border border-slate-300 rounded-lg shadow-md overflow-hidden transition transform group-hover:scale-105 group-hover:border-red-500">
                   <div className="relative h-11 w-full bg-slate-200">
                     <img 
                       src={prop.image} 
@@ -243,15 +233,14 @@ export default function MapView() {
                     </span>
                   </div>
                 </div>
-                {/* 하단 연결 빨간 핀 포인트 */}
-                <div className="w-2.5 h-2.5 bg-red-600 rounded-full border-2 border-white shadow -mt-0.5 animate-pulse" />
+                <div className="w-2.5 h-2.5 bg-red-600 rounded-full border-2 border-white shadow -mt-0.5" />
               </div>
             </foreignObject>
           ))}
         </svg>
       </div>
 
-      {/* 4. 대표 공고 상세 클릭 팝업 모달 */}
+      {/* 카드 클릭 시 팝업 창 */}
       {selectedProperty && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden z-10 animate-in zoom-in-95 duration-150">
