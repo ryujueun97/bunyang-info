@@ -152,17 +152,18 @@ export default function MapView() {
   useEffect(() => {
     setIsMounted(true);
 
-    fetch('/geo/kor_sig.geojson')
+    // 📌 시·도 큰 단위 경계선 데이터 순차 로딩 (public/geo/ 내 파일 우선 연결)
+    fetch('/geo/kor_sido_test_b.json')
       .then((res) => res.json())
       .then((data) => setGeoData(data))
       .catch(() => {
-        fetch('/kor_sig.json')
+        // 온라인 백업 광역시/도 경계 데이터
+        fetch('https://raw.githubusercontent.com/southkorea/southkorea-maps/master/kostat/2013/json/skorea_provinces_2013_geo.json')
           .then((res) => res.json())
           .then((data) => setGeoData(data))
           .catch(() => setGeoData({ type: 'FeatureCollection', features: [] }));
       });
 
-    // 📌 Leaflet 최상단 커스텀 카드 마커 핀 생성
     import('leaflet').then((L) => {
       const iconMap: Record<string, any> = {};
       REPRESENTATIVE_PROPERTIES.forEach((prop) => {
@@ -207,13 +208,13 @@ export default function MapView() {
   return (
     <div className="relative w-full h-[calc(100vh-53px)] bg-[#e0f2fe] flex items-center justify-center overflow-hidden [&_.leaflet-control-attribution]:hidden">
       
-      {/* 1. 상단 시·군·구 검색 바 */}
+      {/* 1. 상단 시·도 검색 바 */}
       <div className="absolute top-4 z-[2000] w-11/12 max-w-md">
         <div className="relative flex items-center bg-white rounded-xl shadow-md border border-slate-200">
           <Search className="w-5 h-5 text-slate-400 ml-3.5 flex-shrink-0" />
           <input 
             type="text" 
-            placeholder="시·군·구 검색 예: 음성군, 달성군, 전주시"
+            placeholder="지역 검색 예: 경기도, 충청북도, 경상남도"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full py-3 px-3 text-sm bg-transparent focus:outline-none text-slate-700 font-medium"
@@ -221,7 +222,7 @@ export default function MapView() {
         </div>
       </div>
 
-      {/* 2. 바다 배경 위에 떠있는 대한민국 지도 및 마커 */}
+      {/* 2. 지도 및 마커 영역 */}
       <div className="w-full h-full relative">
         <MapContainer
           center={[36.0, 127.8]}
@@ -230,7 +231,7 @@ export default function MapView() {
           attributionControl={false}
           className="w-full h-full bg-[#e0f2fe]"
         >
-          {/* 대한민국 시·군·구 행정구역 경계 지도 */}
+          {/* 대한민국 광역시/도 단위 경계 지도 */}
           {geoData && (
             <KoreaGeoLayer
               geo={geoData}
@@ -239,7 +240,7 @@ export default function MapView() {
             />
           )}
 
-          {/* 📌 zIndexOffset=5000 지정으로 카드 핀을 지도 선보다 완벽히 위에 띄움 */}
+          {/* 주요 카드 핀 */}
           {filteredProperties.map((prop) => (
             leafletIcons[prop.id] && (
               <Marker
