@@ -1,9 +1,18 @@
 // @ts-nocheck
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { Search, Plus, Minus, MapPin, X, PhoneCall } from 'lucide-react';
-import KoreaGeoLayer from './KoreaGeoLayer';
+
+import 'leaflet/dist/leaflet.css';
+
+// Leaflet 및 KoreaGeoLayer 컴포넌트를 클라이언트 전용으로 불러오기 (SSR 방지)
+const MapContainer = dynamic(
+  () => import('react-leaflet').then((mod) => mod.MapContainer),
+  { ssr: false }
+);
+const KoreaGeoLayer = dynamic(() => import('./KoreaGeoLayer'), { ssr: false });
 
 interface Property {
   id: string;
@@ -14,8 +23,8 @@ interface Property {
   category: string;
   address: string;
   image: string;
-  svgX: number;
-  svgY: number;
+  lat: number;
+  lng: number;
   areaSize?: string;
   price?: string;
   description?: string;
@@ -31,8 +40,8 @@ const REPRESENTATIVE_PROPERTIES: Property[] = [
     category: '산업단지',
     address: '충청북도 청주시 흥덕구 오송읍',
     image: 'https://images.unsplash.com/photo-1541888946425-d0fbb186a5b3?auto=format&fit=crop&w=600&q=80',
-    svgX: 240,
-    svgY: 250,
+    lat: 36.6200,
+    lng: 127.3200,
     areaSize: '1,200,000m²',
     price: '평당 약 150만원~',
     description: '바이오 헬스케어 및 첨단 소재 기업 중심 입지, KTX 오송역 인접.'
@@ -46,8 +55,8 @@ const REPRESENTATIVE_PROPERTIES: Property[] = [
     category: '산업단지',
     address: '경상북도 경산시 진량읍',
     image: 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?auto=format&fit=crop&w=600&q=80',
-    svgX: 330,
-    svgY: 280,
+    lat: 35.8500,
+    lng: 128.8000,
     areaSize: '850,000m²',
     price: '평당 약 120만원~',
     description: '자동차 부품 및 금속 가공 특화 산업단지, 경부고속도로 인접.'
@@ -61,8 +70,8 @@ const REPRESENTATIVE_PROPERTIES: Property[] = [
     category: '복합단지',
     address: '경기도 평택시 고덕면',
     image: 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=600&q=80',
-    svgX: 190,
-    svgY: 170,
+    lat: 37.0500,
+    lng: 127.0500,
     areaSize: '2,100,000m²',
     price: '평당 약 280만원~',
     description: '삼성전자 평택캠퍼스 인접, 첨단 반도체 클러스터 공급 단지.'
@@ -76,8 +85,8 @@ const REPRESENTATIVE_PROPERTIES: Property[] = [
     category: '산업단지',
     address: '강원특별자치도 원주시 문막읍',
     image: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=600&q=80',
-    svgX: 280,
-    svgY: 140,
+    lat: 37.3300,
+    lng: 127.8500,
     areaSize: '620,000m²',
     price: '평당 약 95만원~',
     description: '수도권 접근성 우수, 친환경 에너지 특화 산업단지.'
@@ -91,8 +100,8 @@ const REPRESENTATIVE_PROPERTIES: Property[] = [
     category: '국가산업단지',
     address: '경상남도 창원시 성산구',
     image: 'https://images.unsplash.com/photo-1541888946425-d0fbb186a5b3?auto=format&fit=crop&w=600&q=80',
-    svgX: 285,
-    svgY: 390,
+    lat: 35.2000,
+    lng: 128.6500,
     areaSize: '1,500,000m²',
     price: '평당 약 210만원~',
     description: '기계·방산 클러스터 중심지, 최첨단 스마트 그린산단.'
@@ -106,8 +115,8 @@ const REPRESENTATIVE_PROPERTIES: Property[] = [
     category: '국가산업단지',
     address: '전라북도 전주시 덕진구',
     image: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=600&q=80',
-    svgX: 185,
-    svgY: 330,
+    lat: 35.8500,
+    lng: 127.1000,
     areaSize: '650,000m²',
     price: '평당 약 110만원~',
     description: '대한민국 탄소산업 허브 메카 산업단지.'
@@ -121,8 +130,8 @@ const REPRESENTATIVE_PROPERTIES: Property[] = [
     category: '물류산업단지',
     address: '전라남도 여수시 율촌면',
     image: 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=600&q=80',
-    svgX: 160,
-    svgY: 430,
+    lat: 34.8500,
+    lng: 127.5500,
     areaSize: '980,000m²',
     price: '평당 약 88만원~',
     description: '광양항 인접 항만물류 및 석유화학 연계 단지.'
@@ -130,12 +139,23 @@ const REPRESENTATIVE_PROPERTIES: Property[] = [
 ];
 
 export default function MapView() {
-  const [zoomLevel, setZoomLevel] = useState<number>(1);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCode, setSelectedCode] = useState<string | null>(null);
+  const [geoData, setGeoData] = useState<any>(null);
+  const [zoomLevel, setZoomLevel] = useState<number>(7);
+  const [isMounted, setIsMounted] = useState(false);
 
-  const handleZoomIn = () => setZoomLevel((prev) => Math.min(prev + 0.25, 2.25));
-  const handleZoomOut = () => setZoomLevel((prev) => Math.max(prev - 0.25, 0.75));
+  useEffect(() => {
+    setIsMounted(true);
+    // 내장 기본 GeoJSON 예비 생성 (파일 로드 실패로 인한 Exception 방지)
+    fetch('/korea.json')
+      .then((res) => res.json())
+      .then((data) => setGeoData(data))
+      .catch(() => {
+        setGeoData({ type: 'FeatureCollection', features: [] });
+      });
+  }, []);
 
   const filteredProperties = REPRESENTATIVE_PROPERTIES.filter(
     (prop) =>
@@ -145,11 +165,13 @@ export default function MapView() {
       prop.address.includes(searchQuery)
   );
 
+  if (!isMounted) return null;
+
   return (
     <div className="relative w-full h-[calc(100vh-53px)] bg-slate-100 flex items-center justify-center overflow-hidden">
       
-      {/* 1. 상단 검색바 */}
-      <div className="absolute top-4 z-30 w-11/12 max-w-md">
+      {/* 1. 검색 바 */}
+      <div className="absolute top-4 z-[800] w-11/12 max-w-md">
         <div className="relative flex items-center bg-white rounded-xl shadow-md border border-slate-200">
           <Search className="w-5 h-5 text-slate-400 ml-3.5 flex-shrink-0" />
           <input 
@@ -162,17 +184,17 @@ export default function MapView() {
         </div>
       </div>
 
-      {/* 2. Zoom (+ / -) 컨트롤 */}
-      <div className="absolute top-4 left-4 z-30 flex flex-col bg-white rounded-lg border border-slate-200 shadow-md overflow-hidden">
+      {/* 2. Zoom (+ / -) 버튼 */}
+      <div className="absolute top-4 left-4 z-[800] flex flex-col bg-white rounded-lg border border-slate-200 shadow-md overflow-hidden">
         <button 
-          onClick={handleZoomIn}
+          onClick={() => setZoomLevel((prev) => Math.min(prev + 1, 10))}
           className="p-2.5 hover:bg-slate-50 border-b border-slate-200 text-slate-700 transition"
           title="확대"
         >
           <Plus className="w-4 h-4" />
         </button>
         <button 
-          onClick={handleZoomOut}
+          onClick={() => setZoomLevel((prev) => Math.max(prev - 1, 5))}
           className="p-2.5 hover:bg-slate-50 text-slate-700 transition"
           title="축소"
         >
@@ -180,62 +202,62 @@ export default function MapView() {
         </button>
       </div>
 
-      {/* 3. 지도 및 오버레이 마커 (1:1 반응형 정렬) */}
-      <div 
-        className="w-full h-full flex items-center justify-center transition-transform duration-200 ease-out"
-        style={{ transform: `scale(${zoomLevel})` }}
-      >
-        <div className="relative w-full h-full max-w-[550px] max-h-[680px] flex items-center justify-center p-2">
-          
-          <svg className="w-full h-full select-none" viewBox="0 0 500 650">
-            {/* 지도 윤곽 레이어 */}
-            <g className="[&_path]:stroke-red-500/80 [&_path]:stroke-[0.8] [&_path]:fill-slate-50 hover:[&_path]:fill-red-50 transition">
-              <KoreaGeoLayer />
-            </g>
+      {/* 3. React-Leaflet 지도 및 KoreaGeoLayer 정상 연동 */}
+      <div className="w-full h-full">
+        {geoData && (
+          <MapContainer
+            center={[36.0, 127.8]}
+            zoom={zoomLevel}
+            zoomControl={false}
+            className="w-full h-full bg-slate-100"
+          >
+            {/* KoreaGeoLayer 렌더링 */}
+            <KoreaGeoLayer
+              geo={geoData}
+              selectedCode={selectedCode}
+              onSelect={(region) => setSelectedCode(region.code)}
+            />
 
-            {/* 마커 카드 (SVG 좌표계 완벽 연동) */}
-            {filteredProperties.map((prop) => (
-              <foreignObject
-                key={prop.id}
-                x={prop.svgX - 52}
-                y={prop.svgY - 40}
-                width="105"
-                height="70"
-                className="overflow-visible"
-              >
-                <div 
+            {/* 대표 분양 카드 오버레이 마커 */}
+            <div className="leaflet-pane leaflet-popup-pane">
+              {filteredProperties.map((prop) => (
+                <div
+                  key={prop.id}
                   onClick={() => setSelectedProperty(prop)}
-                  className="cursor-pointer group flex flex-col items-center pointer-events-auto"
+                  className="absolute cursor-pointer transform -translate-x-1/2 -translate-y-1/2 z-[700] group"
+                  style={{
+                    left: `${((prop.lng - 126.0) / 4.0) * 100}%`,
+                    top: `${((38.5 - prop.lat) / 5.0) * 100}%`
+                  }}
                 >
-                  <div className="w-[100px] bg-white/95 backdrop-blur-sm border border-slate-300 rounded-lg shadow-md overflow-hidden transition transform group-hover:scale-105 group-hover:border-red-500">
-                    <div className="relative h-10 w-full bg-slate-200">
+                  <div className="w-[105px] bg-white/95 backdrop-blur-sm border border-slate-300 rounded-lg shadow-md overflow-hidden transition transform group-hover:scale-105 group-hover:border-red-500">
+                    <div className="relative h-11 w-full bg-slate-200">
                       <img 
                         src={prop.image} 
                         alt={prop.title} 
                         className="w-full h-full object-cover" 
                       />
-                      <span className="absolute top-0.5 left-0.5 bg-cyan-500 text-white font-bold text-[7px] px-1 py-0.2 rounded shadow-sm">
+                      <span className="absolute top-1 left-1 bg-cyan-500 text-white font-bold text-[8px] px-1 py-0.2 rounded shadow-sm">
                         {prop.status}
                       </span>
                     </div>
-                    <div className="p-0.5 text-center bg-white">
-                      <span className="block font-extrabold text-[9px] text-slate-800 truncate leading-tight">
+                    <div className="p-1 text-center bg-white">
+                      <span className="block font-extrabold text-[10px] text-slate-800 truncate leading-tight">
                         {prop.title}
                       </span>
                     </div>
                   </div>
-                  <div className="w-2.5 h-2.5 bg-red-600 rounded-full border-2 border-white shadow -mt-0.5 animate-pulse" />
+                  <div className="w-2.5 h-2.5 bg-red-600 rounded-full border-2 border-white shadow mx-auto -mt-0.5 animate-pulse" />
                 </div>
-              </foreignObject>
-            ))}
-          </svg>
-
-        </div>
+              ))}
+            </div>
+          </MapContainer>
+        )}
       </div>
 
       {/* 4. 상세 모달 팝업 */}
       {selectedProperty && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-150">
             <div className="relative h-44 bg-slate-100">
               <img 
