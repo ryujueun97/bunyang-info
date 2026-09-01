@@ -152,20 +152,31 @@ export default function MapView() {
   useEffect(() => {
     setIsMounted(true);
 
-    // 시·도 단위 파일(kor_sido_test_b.json) 직접 로드
-    fetch('/geo/kor_sido_test_b.json')
-      .then((res) => {
-        if (!res.ok) throw new Error('Failed to load local sido file');
-        return res.json();
-      })
-      .then((data) => setGeoData(data))
-      .catch(() => {
-        // 백업: 온라인 17개 광역시·도 경계선 데이터
-        fetch('https://raw.githubusercontent.com/southkorea/southkorea-maps/master/kostat/2013/json/skorea_provinces_2013_geo.json')
-          .then((res) => res.json())
-          .then((data) => setGeoData(data))
-          .catch(() => setGeoData({ type: 'FeatureCollection', features: [] }));
-      });
+    // 📌 시·도 광역 경계선 데이터 우선 경로 순차 조회
+    const loadGeoData = async () => {
+      const paths = [
+        '/geo/kor_sido_test_b.json',
+        '/geo/kor_sig.geojson',
+        'https://raw.githubusercontent.com/southkorea/southkorea-maps/master/kostat/2013/json/skorea_provinces_2013_geo.json'
+      ];
+
+      for (const path of paths) {
+        try {
+          const res = await fetch(path);
+          if (res.ok) {
+            const data = await res.json();
+            if (data && data.features && data.features.length > 0) {
+              setGeoData(data);
+              break;
+            }
+          }
+        } catch (e) {
+          continue;
+        }
+      }
+    };
+
+    loadGeoData();
 
     import('leaflet').then((L) => {
       const iconMap: Record<string, any> = {};
@@ -209,7 +220,7 @@ export default function MapView() {
   if (!isMounted) return null;
 
   return (
-    <div className="relative w-full h-[calc(100vh-53px)] bg-[#e0f2fe] flex items-center justify-center overflow-hidden [&_.leaflet-control-attribution]:hidden">
+    <div className="relative w-full h-[calc(100vh-53px)] bg-slate-100 flex items-center justify-center overflow-hidden [&_.leaflet-control-attribution]:hidden">
       
       {/* 1. 상단 지역 검색 바 */}
       <div className="absolute top-4 z-[2000] w-11/12 max-w-md">
@@ -225,14 +236,14 @@ export default function MapView() {
         </div>
       </div>
 
-      {/* 2. 대한민국 시·도 지도 및 마커 */}
+      {/* 2. 대한민국 시·도 광역 지도 및 마커 */}
       <div className="w-full h-full relative">
         <MapContainer
           center={[36.0, 127.8]}
           zoom={7}
           zoomControl={true}
           attributionControl={false}
-          className="w-full h-full bg-[#e0f2fe]"
+          className="w-full h-full bg-slate-100"
         >
           {geoData && (
             <KoreaGeoLayer
