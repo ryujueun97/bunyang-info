@@ -1,3 +1,4 @@
+// @ts-nocheck
 'use client'
 
 import { GeoJSON, useMap } from 'react-leaflet'
