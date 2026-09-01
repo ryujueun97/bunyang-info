@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Search, Plus, Minus, MapPin, X, PhoneCall } from 'lucide-react';
+import KoreaGeoLayer from './KoreaGeoLayer';
 
 interface Property {
   id: string;
@@ -12,14 +13,14 @@ interface Property {
   category: string;
   address: string;
   image: string;
-  svgX: number;
-  svgY: number;
+  svgX: number; // 지도 SVG 내 X 좌표
+  svgY: number; // 지도 SVG 내 Y 좌표
   areaSize?: string;
   price?: string;
   description?: string;
 }
 
-// 각 도별 첫 번째(대표) 분양 공고 (도 경계 내부 중앙 위치 지정)
+// 각 도별 첫 번째(대표) 분양 공고 1건씩만 지정
 const REPRESENTATIVE_PROPERTIES: Property[] = [
   {
     id: '1',
@@ -133,13 +134,13 @@ export default function MapView() {
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const handleZoomIn = () => setZoomLevel(prev => Math.min(prev + 0.25, 2.2));
+  const handleZoomIn = () => setZoomLevel(prev => Math.min(prev + 0.25, 2.5));
   const handleZoomOut = () => setZoomLevel(prev => Math.max(prev - 0.25, 0.75));
 
   return (
     <div className="relative w-full h-full bg-slate-100 flex items-center justify-center overflow-hidden">
       
-      {/* 시·군·구 검색창 */}
+      {/* 검색 바 */}
       <div className="absolute top-4 z-20 w-11/12 max-w-md">
         <div className="relative flex items-center bg-white rounded-xl shadow-md border border-slate-200">
           <Search className="w-5 h-5 text-slate-400 ml-3.5 flex-shrink-0" />
@@ -153,7 +154,7 @@ export default function MapView() {
         </div>
       </div>
 
-      {/* 줌 버튼 */}
+      {/* 줌 컨트롤러 */}
       <div className="absolute top-4 left-4 z-20 flex flex-col bg-white rounded-lg border border-slate-200 shadow-md overflow-hidden">
         <button 
           onClick={handleZoomIn}
@@ -171,76 +172,59 @@ export default function MapView() {
         </button>
       </div>
 
-      {/* 지도 및 카드 (확대/축소 및 이동 시 완벽 위치 고정) */}
+      {/* 지도 & 핀 마커 동기화 컨테이너 */}
       <div 
         className="w-full h-full flex items-center justify-center transition-transform duration-200 ease-out"
         style={{ transform: `scale(${zoomLevel})` }}
       >
-        <svg 
-          viewBox="0 0 450 600" 
-          className="w-full h-full max-h-[600px] select-none drop-shadow-sm"
-        >
-          {/* 오직 '도' 단위 붉은색 테두리 경계선만 노출 */}
-          <g stroke="#EF4444" strokeWidth="2" strokeLinejoin="round" fill="#F8FAFC">
-            {/* 경기도 & 서울 & 인천 */}
-            <path d="M140,90 L210,80 L240,120 L220,180 L160,200 L120,150 Z" className="hover:fill-red-50 transition cursor-pointer" />
-            {/* 강원특별자치도 */}
-            <path d="M210,80 L340,60 L370,150 L240,180 L240,120 Z" className="hover:fill-red-50 transition cursor-pointer" />
-            {/* 충청북도 */}
-            <path d="M220,180 L290,190 L270,270 L200,250 L200,200 Z" className="hover:fill-red-50 transition cursor-pointer" />
-            {/* 충청남도 */}
-            <path d="M120,150 L200,200 L200,250 L140,300 L80,230 Z" className="hover:fill-red-50 transition cursor-pointer" />
-            {/* 경상북도 */}
-            <path d="M290,190 L370,150 L410,310 L330,360 L270,270 Z" className="hover:fill-red-50 transition cursor-pointer" />
-            {/* 경상남도 */}
-            <path d="M270,270 L330,360 L310,440 L220,410 L240,340 Z" className="hover:fill-red-50 transition cursor-pointer" />
-            {/* 전라북도 */}
-            <path d="M140,300 L200,250 L240,340 L170,390 L110,340 Z" className="hover:fill-red-50 transition cursor-pointer" />
-            {/* 전라남도 */}
-            <path d="M110,340 L170,390 L220,410 L190,500 L80,470 Z" className="hover:fill-red-50 transition cursor-pointer" />
-            {/* 제주특별자치도 */}
-            <path d="M90,540 L150,540 L140,580 L80,570 Z" className="hover:fill-red-50 transition cursor-pointer" />
-          </g>
+        <div className="relative w-full h-full max-h-[650px] flex items-center justify-center">
+          
+          {/* 1. 원래 제작해두신 정밀 대한민국 지도 레이어 */}
+          <div className="w-full h-full [&_path]:stroke-red-400 [&_path]:stroke-[0.8] [&_path]:fill-slate-50 hover:[&_path]:fill-red-50 transition">
+            <KoreaGeoLayer />
+          </div>
 
-          {/* 도 경계 중앙에 고정된 대표 카드 핀 */}
-          {REPRESENTATIVE_PROPERTIES.map((prop) => (
-            <foreignObject 
-              key={prop.id}
-              x={prop.svgX - 55} 
-              y={prop.svgY - 45} 
-              width="110" 
-              height="75"
-              className="overflow-visible"
-            >
-              <div 
-                onClick={() => setSelectedProperty(prop)}
-                className="cursor-pointer group flex flex-col items-center"
+          {/* 2. 지도와 함께 움직이는 SVG 핀 카드 오버레이 */}
+          <svg className="absolute inset-0 w-full h-full pointer-events-none z-10" viewBox="0 0 500 650">
+            {REPRESENTATIVE_PROPERTIES.map((prop) => (
+              <foreignObject 
+                key={prop.id}
+                x={prop.svgX - 55} 
+                y={prop.svgY - 45} 
+                width="110" 
+                height="75"
+                className="overflow-visible pointer-events-auto"
               >
-                <div className="w-[105px] bg-white border border-slate-300 rounded-lg shadow-md overflow-hidden transition transform group-hover:scale-105 group-hover:border-red-500">
-                  <div className="relative h-11 w-full bg-slate-200">
-                    <img 
-                      src={prop.image} 
-                      alt={prop.title} 
-                      className="w-full h-full object-cover" 
-                    />
-                    <span className="absolute top-1 left-1 bg-cyan-500 text-white font-bold text-[8px] px-1 py-0.2 rounded shadow-sm">
-                      분양중
-                    </span>
+                <div 
+                  onClick={() => setSelectedProperty(prop)}
+                  className="cursor-pointer group flex flex-col items-center"
+                >
+                  <div className="w-[105px] bg-white/95 backdrop-blur-sm border border-slate-300 rounded-lg shadow-md overflow-hidden transition transform group-hover:scale-105 group-hover:border-red-500">
+                    <div className="relative h-11 w-full bg-slate-200">
+                      <img 
+                        src={prop.image} 
+                        alt={prop.title} 
+                        className="w-full h-full object-cover" 
+                      />
+                      <span className="absolute top-1 left-1 bg-cyan-500 text-white font-bold text-[8px] px-1 py-0.2 rounded shadow-sm">
+                        분양중
+                      </span>
+                    </div>
+                    <div className="p-1 text-center bg-white">
+                      <span className="block font-extrabold text-[10px] text-slate-800 truncate leading-tight">
+                        {prop.title}
+                      </span>
+                    </div>
                   </div>
-                  <div className="p-1 text-center bg-white">
-                    <span className="block font-extrabold text-[10px] text-slate-800 truncate leading-tight">
-                      {prop.title}
-                    </span>
-                  </div>
+                  <div className="w-2.5 h-2.5 bg-red-600 rounded-full border-2 border-white shadow -mt-0.5" />
                 </div>
-                <div className="w-2.5 h-2.5 bg-red-600 rounded-full border-2 border-white shadow -mt-0.5" />
-              </div>
-            </foreignObject>
-          ))}
-        </svg>
+              </foreignObject>
+            ))}
+          </svg>
+        </div>
       </div>
 
-      {/* 카드 클릭 시 팝업 창 */}
+      {/* 상세 팝업 */}
       {selectedProperty && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden z-10 animate-in zoom-in-95 duration-150">
